@@ -1,12 +1,16 @@
-module Core.Utils(
-fromMaybeT,
-maybeToLeft
-) where
+module Core.Utils
+  ( fromMaybeT
+  , maybeToLeft
+  ) where
 
-import           Control.Monad             ((<=<))
-import           Control.Monad.Trans.Maybe (MaybeT, runMaybeT)
-import           Data.Either               (either, fromLeft)
-import           Data.Maybe                (fromMaybe, maybe)
+import Control.Monad             ( (<=<) )
+import Control.Monad.Trans.Maybe ( MaybeT
+                                 , runMaybeT
+                                 )
+import Data.Either               ( either )
+import Data.Maybe                ( fromMaybe
+                                 , maybe
+                                 )
 
 fromMaybeT :: (Monad m) => m a -> MaybeT m a -> m a
 fromMaybeT onFail = maybe onFail return <=< runMaybeT
