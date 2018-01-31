@@ -15,7 +15,6 @@ I am going to evolve the app to achieve the following results:
 
 ## TODO
 
-- Improve types
 - Add Monad Transformer Stack to pass config, logger and other down
 - Testing
 

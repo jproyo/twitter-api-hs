@@ -93,12 +93,11 @@ userTimeline config timelineReq = runExceptT $ do
 -- | Create a new 'Twitter.Adapter.Handle' that calls to twitter api.
 newHandle :: Config -> IO TwitterHandle
 newHandle config = do
-    mutex <- newMVar ()
-
-    return Handle
-      { execute = \timelineReq ->
-            withMVar mutex $ \() -> do
-              timeline <- userTimeline config timelineReq
-              liftIO $ cacheResult config (userName timelineReq) timeline
-              return $ Just timeline
-      }
+  mutex <- newMVar ()
+  return Handle
+    { execute = \timelineReq ->
+          withMVar mutex $ \() -> do
+            timeline <- userTimeline config timelineReq
+            liftIO $ cacheResult config (userName timelineReq) timeline
+            return $ Just timeline
+    }
