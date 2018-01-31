@@ -39,36 +39,31 @@ import           Web.Scotty.Trans                     (ActionT, Options,
 type Error = Text
 type Action = ActionT Error ConfigM ()
 
-getSettings :: Environment -> IO Settings
-getSettings e = do
-   let s = defaultSettings
-       s' = case e of
-         Development -> setFdCacheDuration 0 s
-         Production  -> s
-         Test        -> s
-       s'' = setPort 8080 s'
-   return s''
+getSettings :: Environment -> Settings
+getSettings e = setPort 8080 $ case e of
+  Development -> setFdCacheDuration 0 s
+  Production  -> s
+  Test        -> s
+  where
+    s = defaultSettings
 
-getOptions :: Environment -> IO Options
-getOptions e = do
-   s <- getSettings e
-   return def
-     { settings = s
-     , verbose = case e of
-       Development -> 1
-       Production  -> 0
-       Test        -> 0
-     }
+getOptions :: Environment -> Options
+getOptions e = def
+  { settings = getSettings e
+  , verbose = case e of
+    Development -> 1
+    Production  -> 0
+    Test        -> 0
+  }
 
 defaultH :: Error -> Action
 defaultH x = do
   e <- lift $ asks environment
   status internalServerError500
-  let o = case e of
-        Development -> object ["error" .= showError x]
-        Production  -> Null
-        Test        -> object ["error" .= showError x]
-  json o
+  json $ case e of
+    Development -> object [ "error" .= showError x ]
+    Production  -> Null
+    Test        -> object [ "error" .= showError x ]
 
 loggingM :: Environment -> Middleware
 loggingM Development = logStdoutDev
@@ -87,9 +82,9 @@ runApp :: IO ()
 runApp = getConfig >>= runApplication
 
 runApplication :: Config -> IO ()
-runApplication config = do
-  o <- getOptions (environment config)
-  scottyOptsT o (runConfig config) (application (environment config))
+runApplication config = scottyOptsT (getOptions env) (runConfig config) (application (environment config))
+  where
+    env = environment config
 
 application :: Environment -> ScottyT Error ConfigM ()
 application e = do
@@ -100,13 +95,17 @@ application e = do
   notFound notFoundA
 
 rootAction :: Action
-rootAction = json $ object ["endpoints" .= object ["user_timeline" .= String "/user/{userName}/timeline"] ]
+rootAction = json $ object
+  [ "endpoints" .= object
+    [ "user_timeline" .= String "/user/{userName}/timeline"
+    ]
+  ]
 
 userTimelineAction :: Action
 userTimelineAction = do
-  config <- lift ask
+  config   <- lift ask
   userName <- param "userName"
-  limit :: Int <- param "limit" `rescue` (\x -> return 10)
+  limit    <- param "limit" `rescue` (\x -> return 10)
   timeline <- liftIO $ getUserTimeline config userName (Just limit)
   let statusAndResponse err = status (mkStatus (code err) (pack $ show err)) >> json err
       in either statusAndResponse json timeline

@@ -20,10 +20,9 @@ class Monad m => TwitterService m where
   getTimeLine :: Config -> TimeLineRequest -> m (Either TwitterError UserTimeLine)
 
 instance TwitterService IO where
-  getTimeLine config request = do
-    result     <- runMaybeT $  MaybeT (getFromCache config request)
-                           <|> MaybeT (getFromTwitter config request)
-    return $ fromJust result
+  getTimeLine config request = fromJust
+    <$> (runMaybeT $  MaybeT (getFromCache config request)
+                 <|> MaybeT (getFromTwitter config request))
 
 getFrom :: (Config -> IO TwitterHandle) -> Config -> TimeLineRequest -> IO (Maybe (Either TwitterError UserTimeLine))
 getFrom handleBuilder config req = handleBuilder config >>= flip timeline req

@@ -59,10 +59,10 @@ instance ToJSON TwitterError where
   toJSON val = object [ "error" .= object [ "code" .= code val, "message" .= String (pack $ show val)] ]
 
 parseDate :: String -> Maybe UTCTime
-parseDate date = parseTimeM True defaultTimeLocale "%a %h %d %T +0000 %Y" date :: Maybe UTCTime
+parseDate = parseTimeM True defaultTimeLocale "%a %h %d %T +0000 %Y"
 
 createTweet :: Text -> Text -> Maybe UTCTime -> Int -> Int -> Tweet
-createTweet text userName createdAt retweetCount favoriteCount = Tweet{..}
+createTweet = Tweet
 
 createError :: Int -> Maybe TwitterError
 createError code | code < 400            = Nothing

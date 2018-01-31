@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
 -- | This is an abstract interface for a simple Twitter service. It is intended to be
 -- imported qualified as follows.
 --
@@ -25,10 +24,13 @@ type TwitterHandle = Handle TimeLineRequest TwitterError UserTimeLine
 
 type TwitterResponse = HandleResponse TwitterError UserTimeLine
 
-data TimeLineRequest = TimeLineRequest { userName :: Text, limit :: Maybe Int }
+data TimeLineRequest = TimeLineRequest
+  { userName :: Text
+  , limit    :: Maybe Int
+  }
 
 createTimeLineRequest :: Text -> Maybe Int -> TimeLineRequest
-createTimeLineRequest userName limit = TimeLineRequest{..}
+createTimeLineRequest = TimeLineRequest
 
 timeline :: TwitterHandle -> TimeLineRequest -> TwitterResponse
 timeline = execute
