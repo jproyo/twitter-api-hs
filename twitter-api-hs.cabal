@@ -34,6 +34,7 @@ library
                      , data-default
                      , either
                      , http-client
+                     , http-client-tls
                      , http-conduit
                      , http-types
                      , mtl

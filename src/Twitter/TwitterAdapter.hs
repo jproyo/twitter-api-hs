@@ -22,7 +22,9 @@ import           Data.Maybe                 (fromJust, fromMaybe)
 import           Data.Text                  (Text)
 import qualified Data.Text.Encoding         as E
 import           GHC.Generics               (Generic)
-import           Network.HTTP.Client
+import           Network.HTTP.Client        (Manager, newManager,
+                                             setQueryString)
+import           Network.HTTP.Client.TLS    (tlsManagerSettings)
 import           Network.HTTP.Simple
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterHandle, TwitterResponse,
@@ -53,8 +55,8 @@ extractResponse request = do
       onSuccess resp = maybeToLeft resp (createError (getResponseStatusCode response))
   return $ either onError onSuccess (getResponseBody response)
 
-requestBearer :: Config -> TokenResponse
-requestBearer config =
+requestBearer :: Manager -> Config -> TokenResponse
+requestBearer manager config =
     fromMaybeT (return $ Left credentialError) $ do
       key <- MaybeT (return $ twitterEncKey config)
       liftIO $ do
@@ -66,12 +68,13 @@ requestBearer config =
                 $ setRequestPath "/oauth2/token"
                 $ setRequestBodyLBS "grant_type=client_credentials"
                 $ setRequestSecure True
-                $ setRequestPort 443 request
+                $ setRequestPort 443
+                $ setRequestManager manager request
         extractResponse request'
 
 
-requestUserTimeline :: TimeLineRequest -> Token -> TimeLineResponse
-requestUserTimeline timelineReq token = do
+requestUserTimeline :: Manager -> TimeLineRequest -> Token -> TimeLineResponse
+requestUserTimeline manager timelineReq token = do
     request <- parseRequest "https://api.twitter.com"
     let request'
             = setRequestMethod "GET"
@@ -79,7 +82,8 @@ requestUserTimeline timelineReq token = do
             $ setRequestPath "/1.1/statuses/user_timeline.json"
             $ setQueryString [("screen_name", Just (E.encodeUtf8 (userName timelineReq))), ("count", Just (toByteString' $ fromMaybe 10 (limit timelineReq)))]
             $ setRequestSecure True
-            $ setRequestPort 443 request
+            $ setRequestPort 443
+            $ setRequestManager manager request
     extractResponse request'
 
 cacheResult :: Config -> Text -> Either TwitterError UserTimeLine -> IO ()
@@ -87,8 +91,9 @@ cacheResult config username = either (\_ -> return ()) (putInCache config userna
 
 userTimeline :: Config -> TimeLineRequest -> TimeLineResponse
 userTimeline config timelineReq = runExceptT $ do
-  bearer <- ExceptT $ requestBearer config
-  ExceptT $ requestUserTimeline timelineReq bearer
+  httpConnManager <- liftIO $ newManager tlsManagerSettings
+  bearer <- ExceptT $ requestBearer httpConnManager config
+  ExceptT $ requestUserTimeline httpConnManager timelineReq bearer
 
 -- | Create a new 'Twitter.Adapter.Handle' that calls to twitter api.
 newHandle :: Config -> IO TwitterHandle
