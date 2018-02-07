@@ -1,8 +1,6 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Twitter.Config (
-ConfigM(..),
 Config(..),
 Environment(..),
 getConfig,
@@ -11,10 +9,6 @@ readFromCache,
 putInCache
 ) where
 
-import           Control.Applicative        (Applicative, liftA2, (<*>))
-import           Control.Monad.IO.Class     (MonadIO)
-import           Control.Monad.Reader       (MonadReader, ReaderT)
-import           Control.Monad.Trans.Class  (MonadTrans)
 import           Data.Aeson                 (ToJSON, object, toJSON, (.=))
 import qualified Data.ByteString.Base64     as B
 import qualified Data.ByteString.Char8      as S8
@@ -22,6 +16,7 @@ import           Data.ByteString.Conversion
 import           Data.Cache                 as C (Cache, insert, lookup,
                                                   newCache)
 import           Data.Maybe                 (maybe)
+import           Data.Monoid                ((<>))
 import           Data.Text                  (Text)
 import           System.Clock               (fromNanoSecs)
 import           System.Environment         (lookupEnv)
@@ -43,10 +38,6 @@ data Config = Config
   , cache       :: C.Cache Text UserTimeLine
   }
 
-newtype ConfigM a = ConfigM
-  { runConfigM :: ReaderT Config IO a
-  } deriving (Applicative, Functor, Monad, MonadIO, MonadReader Config)
-
 data TwitterConf = TwitterConf {
   consumerKey    :: Maybe String,
   consumerSecret :: Maybe String
@@ -66,10 +57,9 @@ getConfig = do
   return Config{..}
 
 concatKeySecret :: Config -> Maybe String
-concatKeySecret conf = liftA2 (++) ((++) <$> key <*> Just ":") secret
-  where twitterConf = twitter conf
-        key = consumerKey twitterConf
-        secret = consumerSecret twitterConf
+concatKeySecret conf = key conf <> Just ":" <> secret conf
+  where key = consumerKey . twitter
+        secret = consumerSecret . twitter
 
 twitterEncKey :: Config -> Maybe S8.ByteString
 twitterEncKey conf = B.encode . toByteString' <$> concatKeySecret conf

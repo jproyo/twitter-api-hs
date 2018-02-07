@@ -1,12 +1,15 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
 module App (runApp, app) where
 
-import           Control.Monad.IO.Class               (liftIO)
-import           Control.Monad.Reader                 (asks, lift, runReaderT)
+import           Control.Monad.IO.Class               (MonadIO, liftIO)
+import           Control.Monad.Reader                 (MonadReader, ReaderT,
+                                                       asks, lift, runReaderT)
 import           Control.Monad.Reader.Class           (ask)
+import           Control.Monad.Trans.Class            (MonadTrans)
 import           Data.Aeson                           (Value (..), object, (.=))
 import           Data.ByteString.Char8                (pack)
 import           Data.Default                         (def)
@@ -20,10 +23,9 @@ import           Network.Wai.Handler.Warp             (Settings,
                                                        setFdCacheDuration,
                                                        setPort)
 import           Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
-import           Twitter.Config                       (Config (..), ConfigM,
+import           Twitter.Config                       (Config (..),
                                                        Environment (..),
-                                                       getConfig, runConfigM,
-                                                       twitterEncKey)
+                                                       getConfig, twitterEncKey)
 import           Twitter.Model                        (TwitterError (..),
                                                        UserTimeLine)
 import           Twitter.Service                      (getUserTimeline)
@@ -35,6 +37,10 @@ import           Web.Scotty.Trans                     (ActionT, Options,
                                                        settings, showError,
                                                        status, verbose)
 
+
+newtype ConfigM a = ConfigM
+ { runConfigM :: ReaderT Config IO a
+ } deriving (Applicative, Functor, Monad, MonadIO, MonadReader Config)
 
 type Error = Text
 type Action = ActionT Error ConfigM ()
