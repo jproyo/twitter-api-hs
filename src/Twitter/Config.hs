@@ -5,21 +5,18 @@ Config(..),
 Environment(..),
 getConfig,
 twitterEncKey,
-readFromCache,
-putInCache
+mapEnvToPriority
 ) where
 
 import           Data.Aeson                 (ToJSON, object, toJSON, (.=))
 import qualified Data.ByteString.Base64     as B
 import qualified Data.ByteString.Char8      as S8
 import           Data.ByteString.Conversion
-import           Data.Cache                 as C (Cache, insert, lookup,
-                                                  newCache)
 import           Data.Maybe                 (maybe)
 import           Data.Monoid                ((<>))
 import           Data.Text                  (Text)
-import           System.Clock               (fromNanoSecs)
 import           System.Environment         (lookupEnv)
+import           System.Log.Logger
 import           Twitter.Model              (UserTimeLine)
 
 
@@ -35,7 +32,6 @@ instance ToJSON Environment where
 data Config = Config
   { twitter     :: TwitterConf
   , environment :: Environment
-  , cache       :: C.Cache Text UserTimeLine
   }
 
 data TwitterConf = TwitterConf {
@@ -43,17 +39,10 @@ data TwitterConf = TwitterConf {
   consumerSecret :: Maybe String
 }
 
-readFromCache :: Config -> Text -> IO (Maybe UserTimeLine)
-readFromCache config = C.lookup (cache config)
-
-putInCache :: Config -> Text -> UserTimeLine -> IO ()
-putInCache config = C.insert (cache config)
-
 getConfig :: IO Config
 getConfig = do
   environment <- getEnvironment
   twitter     <- getTwitterConf
-  cache       <- C.newCache (Just (fromNanoSecs 30000000000))
   return Config{..}
 
 concatKeySecret :: Config -> Maybe String
@@ -72,3 +61,8 @@ getTwitterConf = do
   consumerKey    <- lookupEnv "TWITTER_CONSUMER_KEY"
   consumerSecret <- lookupEnv "TWITTER_CONSUMER_SECRET"
   return TwitterConf{..}
+
+mapEnvToPriority :: Environment -> Priority
+mapEnvToPriority Development = DEBUG
+mapEnvToPriority Production  = INFO
+mapEnvToPriority _           = ERROR

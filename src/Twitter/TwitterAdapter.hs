@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Twitter.TwitterAdapter (
@@ -7,8 +8,10 @@ newHandle
 
 import           Control.Applicative        (empty, (<$>), (<*>))
 import           Control.Concurrent.MVar    (newMVar, withMVar)
-import           Control.Monad              (mplus)
 import           Control.Monad.Except       (ExceptT (..), runExceptT)
+import           Control.Monad.IO.Class     (MonadIO, liftIO)
+import           Control.Monad.Reader       (MonadReader, lift, runReaderT)
+import           Control.Monad.Reader.Class (ask)
 import           Control.Monad.Trans        (liftIO)
 import           Control.Monad.Trans.Maybe  (MaybeT (..))
 import           Core.Utils                 (fromMaybeT, maybeToLeft)
@@ -16,8 +19,7 @@ import           Data.Aeson                 (FromJSON (..), ToJSON (..),
                                              Value (..), object, (.:), (.=))
 import qualified Data.ByteString.Char8      as S8
 import           Data.ByteString.Conversion (toByteString')
-import           Data.Cache                 as C (insert)
-import           Data.Either                (either, fromLeft)
+import           Data.Either                (either)
 import           Data.Maybe                 (fromJust, fromMaybe)
 import           Data.Text                  (Text)
 import qualified Data.Text.Encoding         as E
@@ -29,8 +31,8 @@ import           Network.HTTP.Simple
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterHandle, TwitterResponse,
                                              execute)
-import           Twitter.Config             (Config (..), putInCache,
-                                             twitterEncKey)
+import           Twitter.Config             (Config, twitterEncKey)
+import           Twitter.Context            (Context, putInCache, conf)
 import           Twitter.Model              (TwitterError, UserTimeLine,
                                              apiError, createError,
                                              credentialError)
@@ -86,23 +88,30 @@ requestUserTimeline manager timelineReq token = do
             $ setRequestManager manager request
     extractResponse request'
 
-cacheResult :: Config -> Text -> Either TwitterError UserTimeLine -> IO ()
-cacheResult config username = either (\_ -> return ()) (putInCache config username)
+cacheResult :: Context -> Text -> Either TwitterError UserTimeLine -> IO ()
+cacheResult cxt username = either (\_ -> return ()) (putInCache cxt username)
 
-userTimeline :: Config -> TimeLineRequest -> TimeLineResponse
-userTimeline config timelineReq = runExceptT $ do
+userTimeline :: Context -> TimeLineRequest -> TimeLineResponse
+userTimeline cxt timelineReq = runExceptT $ do
   httpConnManager <- liftIO $ newManager tlsManagerSettings
-  bearer <- ExceptT $ requestBearer httpConnManager config
+  bearer <- ExceptT $ requestBearer httpConnManager (conf cxt)
   ExceptT $ requestUserTimeline httpConnManager timelineReq bearer
 
+searchAndCache :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m (Either TwitterError UserTimeLine)
+searchAndCache timelineReq = do
+  cxt <- ask
+  liftIO $ do
+    timeline <- userTimeline cxt timelineReq
+    cacheResult cxt (userName timelineReq) timeline
+    return timeline
+
 -- | Create a new 'Twitter.Adapter.Handle' that calls to twitter api.
-newHandle :: Config -> IO TwitterHandle
-newHandle config = do
+newHandle :: Context -> IO TwitterHandle
+newHandle cxt = do
   mutex <- newMVar ()
   return Handle
     { execute = \timelineReq ->
           withMVar mutex $ \() -> do
-            timeline <- userTimeline config timelineReq
-            liftIO $ cacheResult config (userName timelineReq) timeline
+            timeline <- runReaderT (searchAndCache timelineReq) cxt
             return $ Just timeline
     }

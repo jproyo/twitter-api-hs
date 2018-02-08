@@ -22,6 +22,7 @@ library
                      , Twitter.TwitterAdapter
                      , Twitter.CacheAdapter
                      , Twitter.Config
+                     , Twitter.Context
                      , Twitter.Model
                      , Twitter.Service
   build-depends:       base >= 4.7 && < 5
@@ -33,6 +34,7 @@ library
                      , clock
                      , data-default
                      , either
+                     , hslogger
                      , http-client
                      , http-client-tls
                      , http-conduit

@@ -12,6 +12,7 @@ import           Control.Monad.Reader.Class           (ask)
 import           Control.Monad.Trans.Class            (MonadTrans)
 import           Data.Aeson                           (Value (..), object, (.=))
 import           Data.ByteString.Char8                (pack)
+import           Data.Cache                           as C (Cache, newCache)
 import           Data.Default                         (def)
 import           Data.Text.Lazy                       (Text)
 import           Network.HTTP.Types.Status            (created201,
@@ -23,9 +24,12 @@ import           Network.Wai.Handler.Warp             (Settings,
                                                        setFdCacheDuration,
                                                        setPort)
 import           Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
+import           System.Clock                         (fromNanoSecs)
 import           Twitter.Config                       (Config (..),
                                                        Environment (..),
                                                        getConfig, twitterEncKey)
+import           Twitter.Context                      (Context, EnvCxt (..),
+                                                       buildCxt)
 import           Twitter.Model                        (TwitterError (..),
                                                        UserTimeLine)
 import           Twitter.Service                      (getUserTimeline)
@@ -38,12 +42,13 @@ import           Web.Scotty.Trans                     (ActionT, Options,
                                                        status, verbose)
 
 
-newtype ConfigM a = ConfigM
- { runConfigM :: ReaderT Config IO a
- } deriving (Applicative, Functor, Monad, MonadIO, MonadReader Config)
+
+newtype ContextM a = ContextM
+ { runContextM :: ReaderT Context IO a
+ } deriving (Applicative, Functor, Monad, MonadIO, MonadReader Context)
 
 type Error = Text
-type Action = ActionT Error ConfigM ()
+type Action = ActionT Error ContextM ()
 
 getSettings :: Environment -> Settings
 getSettings e = setPort 8080 $ case e of
@@ -64,7 +69,7 @@ getOptions e = def
 
 defaultH :: Error -> Action
 defaultH x = do
-  e <- lift $ asks environment
+  e <- lift $ asks env
   status internalServerError500
   json $ case e of
     Development -> object [ "error" .= showError x ]
@@ -76,23 +81,29 @@ loggingM Development = logStdoutDev
 loggingM Production  = logStdout
 loggingM _           = id
 
-runConfig :: Config -> ConfigM a -> IO a
-runConfig config m = runReaderT (runConfigM m) config
+buildContext :: IO Context
+buildContext = do
+  config <- getConfig
+  cache <- C.newCache (Just (fromNanoSecs 30000000000))
+  return $ buildCxt config putStrLn cache
+
+runConfig :: Context -> ContextM a -> IO a
+runConfig cxt m = runReaderT (runContextM m) cxt
 
 app :: IO Application
 app = do
-  config <- getConfig
-  scottyAppT (runConfig config) (application (environment config))
+  cxt <- buildContext
+  scottyAppT (runConfig cxt) (application (env cxt))
 
 runApp :: IO ()
-runApp = getConfig >>= runApplication
+runApp = buildContext >>= runApplication
 
-runApplication :: Config -> IO ()
-runApplication config = scottyOptsT (getOptions env) (runConfig config) (application (environment config))
+runApplication :: Context -> IO ()
+runApplication cxt = scottyOptsT (getOptions e) (runConfig cxt) (application e)
   where
-    env = environment config
+    e = env cxt
 
-application :: Environment -> ScottyT Error ConfigM ()
+application :: Environment -> ScottyT Error ContextM ()
 application e = do
   middleware (loggingM e)
   defaultHandler defaultH
@@ -109,10 +120,10 @@ rootAction = json $ object
 
 userTimelineAction :: Action
 userTimelineAction = do
-  config   <- lift ask
+  cxt      <- lift ask
   userName <- param "userName"
   limit    <- param "limit" `rescue` (\x -> return 10)
-  timeline <- liftIO $ getUserTimeline config userName (Just limit)
+  timeline <- liftIO $ getUserTimeline cxt userName (Just limit)
   let statusAndResponse err = status (mkStatus (code err) (pack $ show err)) >> json err
       in either statusAndResponse json timeline
 
