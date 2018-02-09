@@ -28,8 +28,8 @@ import           System.Clock                         (fromNanoSecs)
 import           Twitter.Config                       (Config (..),
                                                        Environment (..),
                                                        getConfig, twitterEncKey)
-import           Twitter.Context                      (Context, EnvCxt (..),
-                                                       buildCxt)
+import           Twitter.Context                      (ConfigCxt (..), Context,
+                                                       EnvCxt (..), buildCxt)
 import           Twitter.Model                        (TwitterError (..),
                                                        UserTimeLine)
 import           Twitter.Service                      (getUserTimeline)
@@ -123,7 +123,7 @@ userTimelineAction = do
   cxt      <- lift ask
   userName <- param "userName"
   limit    <- param "limit" `rescue` (\x -> return 10)
-  timeline <- liftIO $ getUserTimeline cxt userName (Just limit)
+  timeline <- liftIO $ runReaderT (getUserTimeline userName (Just limit)) cxt
   let statusAndResponse err = status (mkStatus (code err) (pack $ show err)) >> json err
       in either statusAndResponse json timeline
 

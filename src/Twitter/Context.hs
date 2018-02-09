@@ -22,11 +22,11 @@ data Context = Context
   }
 
 class LogCxt a where
-  log :: a -> (String -> IO ())
+  logC :: a -> (String -> IO ())
 instance LogCxt Context where
-  log = logger
+  logC = logger
 instance LogCxt (String -> IO ()) where
-  log = id
+  logC = id
 
 class ConfigCxt a where
   conf :: a -> Config

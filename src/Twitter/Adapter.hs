@@ -1,28 +1,25 @@
--- | This is an abstract interface for a simple Twitter service. It is intended to be
--- imported qualified as follows.
---
--- > import qualified Twitter.Service as Service
---
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+
 module Twitter.Adapter
   (
     Handle(..)
-  , TwitterHandle
   , TimeLineRequest(userName,limit)
   , TwitterResponse
   , createTimeLineRequest
-  , timeline
   ) where
 
-import           Data.Text     (Text)
-import           Twitter.Model (TwitterError, UserTimeLine)
+import           Control.Monad.IO.Class (MonadIO)
+import           Control.Monad.Reader   (MonadReader)
+import           Data.Text              (Text)
+import           Twitter.Context        (Context)
+import           Twitter.Model          (TwitterError, UserTimeLine)
 
-type HandleResponse e a = IO (Maybe (Either e a))
+newtype Handle m = Handle
+  { timeline :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse }
 
-newtype Handle a e b = Handle { execute :: a -> HandleResponse e b }
-
-type TwitterHandle = Handle TimeLineRequest TwitterError UserTimeLine
-
-type TwitterResponse = HandleResponse TwitterError UserTimeLine
+type TwitterResponse = Maybe (Either TwitterError UserTimeLine)
 
 data TimeLineRequest = TimeLineRequest
   { userName :: Text
@@ -31,6 +28,3 @@ data TimeLineRequest = TimeLineRequest
 
 createTimeLineRequest :: Text -> Maybe Int -> TimeLineRequest
 createTimeLineRequest = TimeLineRequest
-
-timeline :: TwitterHandle -> TimeLineRequest -> TwitterResponse
-timeline = execute

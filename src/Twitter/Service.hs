@@ -1,37 +1,33 @@
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Twitter.Service
   (
-  TwitterService(..),
   getUserTimeline
   ) where
 
 import           Control.Applicative       ((<|>))
+import           Control.Monad.IO.Class    (MonadIO)
+import           Control.Monad.Reader      (MonadReader, ReaderT)
 import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Data.Maybe                (fromJust)
 import           Data.Text                 (Text)
 import           Twitter.Adapter           (Handle, TimeLineRequest,
-                                            TwitterHandle,
                                             createTimeLineRequest, timeline)
 import           Twitter.CacheAdapter      as CA
 import           Twitter.Context           (Context)
 import           Twitter.Model             (TwitterError, UserTimeLine)
 import qualified Twitter.TwitterAdapter    as TA
 
-class Monad m => TwitterService m where
-  getTimeLine :: Context -> TimeLineRequest -> m (Either TwitterError UserTimeLine)
+getTimeLine :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m (Either TwitterError UserTimeLine)
+getTimeLine request = fromJust
+  <$> runMaybeT (MaybeT (getFromCache   request)
+             <|> MaybeT (getFromTwitter request))
 
-instance TwitterService IO where
-  getTimeLine cxt request = fromJust
-    <$> runMaybeT (MaybeT (getFromCache cxt request)
-               <|> MaybeT (getFromTwitter cxt request))
+getFromCache :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m (Maybe (Either TwitterError UserTimeLine))
+getFromCache = timeline CA.newHandle
 
-getFrom :: (Context -> IO TwitterHandle) -> Context -> TimeLineRequest -> IO (Maybe (Either TwitterError UserTimeLine))
-getFrom handleBuilder cxt req = handleBuilder cxt >>= flip timeline req
+getFromTwitter :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m (Maybe (Either TwitterError UserTimeLine))
+getFromTwitter = timeline TA.newHandle
 
-getFromCache :: Context -> TimeLineRequest -> IO (Maybe (Either TwitterError UserTimeLine))
-getFromCache = getFrom CA.newHandle
-
-getFromTwitter :: Context -> TimeLineRequest -> IO (Maybe (Either TwitterError UserTimeLine))
-getFromTwitter = getFrom TA.newHandle
-
-getUserTimeline :: TwitterService m => Context -> Text -> Maybe Int -> m (Either TwitterError UserTimeLine)
-getUserTimeline cxt userName limit = getTimeLine cxt (createTimeLineRequest userName limit)
+getUserTimeline :: (MonadReader Context m, MonadIO m) => Text -> Maybe Int -> m (Either TwitterError UserTimeLine)
+getUserTimeline userName limit = getTimeLine $ createTimeLineRequest userName limit
