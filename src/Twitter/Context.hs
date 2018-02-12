@@ -9,9 +9,8 @@ module Twitter.Context
   buildCxt
   ) where
 
-import           Data.Cache     as C (Cache, insert, lookup, newCache)
+import           Data.Cache     as C (Cache, insert, lookup)
 import           Data.Text      (Text)
-import           System.Clock   (fromNanoSecs)
 import           Twitter.Config (Config (environment), Environment)
 import           Twitter.Model  (UserTimeLine)
 

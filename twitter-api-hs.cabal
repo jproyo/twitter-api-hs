@@ -2,12 +2,12 @@ name:                twitter-api-hs
 version:             0.1.0.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/githubuser/twitter-api-hs#readme
+homepage:            https://github.com/jproyo/twitter-api-hs#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2018 Author name here
+author:              Juan Pablo Royo Sales
+maintainer:          juanpablo.royo@gmail.com
+copyright:           2018 jproyo
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
@@ -49,6 +49,7 @@ library
                      , warp
                      , yaml
   default-language:    Haskell2010
+  ghc-options:       -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
 
 executable twitter-api-hs-exe
   hs-source-dirs:      app

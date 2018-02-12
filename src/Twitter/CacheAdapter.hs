@@ -7,18 +7,14 @@ newHandle
 ) where
 
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
-import           Control.Monad.Reader       (MonadReader, asks, lift,
-                                             runReaderT)
+import           Control.Monad.Reader       (MonadReader)
 import           Control.Monad.Reader.Class (ask)
 import           Data.Monoid                ((<>))
-import           Data.Text                  (Text, unpack)
+import           Data.Text                  (unpack)
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterResponse)
 import           Twitter.Context            (Context, LogCxt (logC),
                                              readFromCache)
-import           Twitter.Model              (TwitterError, UserTimeLine,
-                                             apiError, createError, createTweet,
-                                             credentialError)
 
 cacheTimeLine :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse
 cacheTimeLine req = do

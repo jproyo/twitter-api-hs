@@ -14,11 +14,8 @@ import qualified Data.ByteString.Char8      as S8
 import           Data.ByteString.Conversion
 import           Data.Maybe                 (maybe)
 import           Data.Monoid                ((<>))
-import           Data.Text                  (Text)
 import           System.Environment         (lookupEnv)
 import           System.Log.Logger
-import           Twitter.Model              (UserTimeLine)
-
 
 data Environment
   = Development

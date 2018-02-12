@@ -9,14 +9,12 @@ import           Control.Monad.IO.Class               (MonadIO, liftIO)
 import           Control.Monad.Reader                 (MonadReader, ReaderT,
                                                        asks, lift, runReaderT)
 import           Control.Monad.Reader.Class           (ask)
-import           Control.Monad.Trans.Class            (MonadTrans)
 import           Data.Aeson                           (Value (..), object, (.=))
 import           Data.ByteString.Char8                (pack)
-import           Data.Cache                           as C (Cache, newCache)
+import           Data.Cache                           as C (newCache)
 import           Data.Default                         (def)
 import           Data.Text.Lazy                       (Text)
-import           Network.HTTP.Types.Status            (created201,
-                                                       internalServerError500,
+import           Network.HTTP.Types.Status            (internalServerError500,
                                                        mkStatus, notFound404)
 import           Network.Wai                          (Application, Middleware)
 import           Network.Wai.Handler.Warp             (Settings,
@@ -25,13 +23,11 @@ import           Network.Wai.Handler.Warp             (Settings,
                                                        setPort)
 import           Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
 import           System.Clock                         (fromNanoSecs)
-import           Twitter.Config                       (Config (..),
-                                                       Environment (..),
-                                                       getConfig, twitterEncKey)
-import           Twitter.Context                      (ConfigCxt (..), Context,
-                                                       EnvCxt (..), buildCxt)
-import           Twitter.Model                        (TwitterError (..),
-                                                       UserTimeLine)
+import           Twitter.Config                       (Environment (..),
+                                                       getConfig)
+import           Twitter.Context                      (Context, EnvCxt (..),
+                                                       buildCxt)
+import           Twitter.Model                        (TwitterError (..))
 import           Twitter.Service                      (getUserTimeline)
 import           Web.Scotty.Trans                     (ActionT, Options,
                                                        ScottyT, defaultHandler,
@@ -122,7 +118,7 @@ userTimelineAction :: Action
 userTimelineAction = do
   cxt      <- lift ask
   userName <- param "userName"
-  limit    <- param "limit" `rescue` (\x -> return 10)
+  limit    <- param "limit" `rescue` (\_ -> return 10)
   timeline <- liftIO $ runReaderT (getUserTimeline userName (Just limit)) cxt
   let statusAndResponse err = status (mkStatus (code err) (pack $ show err)) >> json err
       in either statusAndResponse json timeline

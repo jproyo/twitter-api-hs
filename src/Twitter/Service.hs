@@ -7,11 +7,11 @@ module Twitter.Service
 
 import           Control.Applicative       ((<|>))
 import           Control.Monad.IO.Class    (MonadIO)
-import           Control.Monad.Reader      (MonadReader, ReaderT)
+import           Control.Monad.Reader      (MonadReader)
 import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Data.Maybe                (fromJust)
 import           Data.Text                 (Text)
-import           Twitter.Adapter           (Handle, TimeLineRequest,
+import           Twitter.Adapter           (TimeLineRequest,
                                             createTimeLineRequest, timeline)
 import           Twitter.CacheAdapter      as CA
 import           Twitter.Context           (Context)

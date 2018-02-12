@@ -10,10 +10,8 @@ newHandle
 import           Control.Applicative        (empty, (<$>), (<*>))
 import           Control.Monad.Except       (ExceptT (..), runExceptT)
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
-import           Control.Monad.Reader       (MonadReader, asks, lift,
-                                             runReaderT)
+import           Control.Monad.Reader       (MonadReader, asks)
 import           Control.Monad.Reader.Class (ask)
-import           Control.Monad.Trans        (liftIO)
 import           Control.Monad.Trans.Maybe  (MaybeT (..))
 import           Core.Utils                 (fromMaybeT, maybeToLeft)
 import           Data.Aeson                 (FromJSON (..), ToJSON (..),
@@ -31,11 +29,10 @@ import           Network.HTTP.Client.TLS    (tlsManagerSettings)
 import           Network.HTTP.Simple
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterResponse)
-import           Twitter.Config             (Config, twitterEncKey)
+import           Twitter.Config             (twitterEncKey)
 import           Twitter.Context            (Context, conf, putInCache)
 import           Twitter.Model              (TwitterError, UserTimeLine,
-                                             apiError, createError,
-                                             credentialError)
+                                             createError, credentialError)
 
 data Token = Token { tokenType :: Text, accessToken :: Text } deriving (Generic, Show)
 
@@ -44,7 +41,7 @@ instance FromJSON Token where
     parseJSON _          = empty
 
 instance ToJSON Token where
-    toJSON (Token tokenType accessToken) = object ["token_type" .= tokenType, "access_token" .= accessToken]
+    toJSON (Token tToken aToken) = object ["token_type" .= tToken, "access_token" .= aToken]
 
 type ApiResponse a m = m (Either TwitterError a)
 type TokenResponse m = ApiResponse Token m
@@ -76,12 +73,12 @@ requestBearer manager = do
         extractResponse request'
 
 
-requestUserTimeline :: (MonadReader Context m, MonadIO m) => Manager -> TimeLineRequest -> Token -> TimeLineResponse m
+requestUserTimeline :: (MonadIO m) => Manager -> TimeLineRequest -> Token -> TimeLineResponse m
 requestUserTimeline manager timelineReq token = liftIO $ do
   request <- parseRequest "https://api.twitter.com"
   let request'
           = setRequestMethod "GET"
-          $ setRequestHeader "Authorization" [S8.concat ["Bearer ", E.encodeUtf8 (accessToken token)]]
+          $ setRequestHeader "Authorization" [S8.concat [E.encodeUtf8 (tokenType token), " ", E.encodeUtf8 (accessToken token)]]
           $ setRequestPath "/1.1/statuses/user_timeline.json"
           $ setQueryString [("screen_name", Just (E.encodeUtf8 (userName timelineReq))), ("count", Just (toByteString' $ fromMaybe 10 (limit timelineReq)))]
           $ setRequestSecure True
@@ -89,10 +86,11 @@ requestUserTimeline manager timelineReq token = liftIO $ do
           $ setRequestManager manager request
   extractResponse request'
 
+
 cacheResult :: (MonadReader Context m, MonadIO m) => Text -> Either TwitterError UserTimeLine -> m ()
-cacheResult username timeline = do
+cacheResult username result = do
   cxt <- ask
-  liftIO $ either (\_ -> return ()) (putInCache cxt username) timeline
+  liftIO $ either (\_ -> return ()) (putInCache cxt username) result
 
 userTimeline :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> TimeLineResponse m
 userTimeline timelineReq = runExceptT $ do
@@ -102,9 +100,9 @@ userTimeline timelineReq = runExceptT $ do
 
 searchAndCache :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse
 searchAndCache timelineReq = do
-  timeline <- userTimeline timelineReq
-  cacheResult (userName timelineReq) timeline
-  return (Just timeline)
+  result <- userTimeline timelineReq
+  cacheResult (userName timelineReq) result
+  return (Just result)
 
 newHandle :: (MonadReader Context m, MonadIO m) => Handle m
 newHandle = Handle { timeline = searchAndCache }
