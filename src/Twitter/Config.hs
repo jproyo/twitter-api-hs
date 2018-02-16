@@ -4,8 +4,7 @@ module Twitter.Config (
 Config(..),
 Environment(..),
 getConfig,
-twitterEncKey,
-mapEnvToPriority
+twitterEncKey
 ) where
 
 import           Data.Aeson                 (ToJSON, object, toJSON, (.=))
@@ -15,7 +14,6 @@ import           Data.ByteString.Conversion
 import           Data.Maybe                 (maybe)
 import           Data.Monoid                ((<>))
 import           System.Environment         (lookupEnv)
-import           System.Log.Logger
 
 data Environment
   = Development
@@ -58,8 +56,3 @@ getTwitterConf = do
   consumerKey    <- lookupEnv "TWITTER_CONSUMER_KEY"
   consumerSecret <- lookupEnv "TWITTER_CONSUMER_SECRET"
   return TwitterConf{..}
-
-mapEnvToPriority :: Environment -> Priority
-mapEnvToPriority Development = DEBUG
-mapEnvToPriority Production  = INFO
-mapEnvToPriority _           = ERROR

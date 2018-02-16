@@ -15,7 +15,6 @@ I am going to evolve the app to achieve the following results:
 
 ## TODO
 
-- Add Monad Transformer Stack to pass config, logger and other down
 - Use a Free Monad to abstract out Grammar
 - Testing
 
