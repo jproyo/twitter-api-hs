@@ -9,18 +9,19 @@ newHandle
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import           Control.Monad.Reader       (MonadReader)
 import           Control.Monad.Reader.Class (ask)
+import           Data.Maybe                 (maybe)
 import           Data.Monoid                ((<>))
-import           Data.Text                  (unpack)
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterResponse)
-import           Twitter.Context            (Context, LogCxt (logC),
+import           Twitter.Context            (Context, LogCxt (..),
                                              readFromCache)
 
 cacheTimeLine :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse
 cacheTimeLine req = do
   cache <- ask
-  liftIO $ logC cache ("Getting from cache " <> unpack (userName req))
-  maybeToEither <$> liftIO (cache `readFromCache` userName req)
+  fromCache <- liftIO (cache `readFromCache` userName req)
+  liftIO $ debug cache $ "Cache timeline for " <> userName req <> " value " <> maybe "[Nothing]" (\_ -> "[Cached Timeline]") fromCache
+  return $ maybeToEither fromCache
   where
     maybeToEither (Just val) = Just (Right val)
     maybeToEither Nothing    = Nothing

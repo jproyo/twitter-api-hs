@@ -20,7 +20,8 @@ import qualified Data.ByteString.Char8      as S8
 import           Data.ByteString.Conversion (toByteString')
 import           Data.Either                (either)
 import           Data.Maybe                 (fromJust, fromMaybe)
-import           Data.Text                  (Text)
+import           Data.Monoid                ((<>))
+import           Data.Text                  (Text, pack)
 import qualified Data.Text.Encoding         as E
 import           GHC.Generics               (Generic)
 import           Network.HTTP.Client        (Manager, newManager,
@@ -30,7 +31,8 @@ import           Network.HTTP.Simple
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterResponse)
 import           Twitter.Config             (twitterEncKey)
-import           Twitter.Context            (Context, conf, putInCache)
+import           Twitter.Context            (Context, LogCxt (..), conf,
+                                             putInCache)
 import           Twitter.Model              (TwitterError, UserTimeLine,
                                              createError, credentialError)
 
@@ -100,6 +102,8 @@ userTimeline timelineReq = runExceptT $ do
 
 searchAndCache :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse
 searchAndCache timelineReq = do
+  cxt <- ask
+  liftIO $ debug cxt $ "Searching timeline in Twitter API for " <> pack (show timelineReq)
   result <- userTimeline timelineReq
   cacheResult (userName timelineReq) result
   return (Just result)

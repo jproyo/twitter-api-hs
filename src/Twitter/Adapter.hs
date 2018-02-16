@@ -24,7 +24,7 @@ type TwitterResponse = Maybe (Either TwitterError UserTimeLine)
 data TimeLineRequest = TimeLineRequest
   { userName :: Text
   , limit    :: Maybe Int
-  }
+  } deriving (Show)
 
 createTimeLineRequest :: Text -> Maybe Int -> TimeLineRequest
 createTimeLineRequest = TimeLineRequest

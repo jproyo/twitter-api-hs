@@ -11,7 +11,6 @@ import           Control.Monad.Reader                 (MonadReader, ReaderT,
 import           Control.Monad.Reader.Class           (ask)
 import           Data.Aeson                           (Value (..), object, (.=))
 import           Data.ByteString.Char8                (pack)
-import           Data.Cache                           as C (newCache)
 import           Data.Default                         (def)
 import           Data.Text.Lazy                       (Text)
 import           Network.HTTP.Types.Status            (internalServerError500,
@@ -22,9 +21,7 @@ import           Network.Wai.Handler.Warp             (Settings,
                                                        setFdCacheDuration,
                                                        setPort)
 import           Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
-import           System.Clock                         (fromNanoSecs)
-import           Twitter.Config                       (Environment (..),
-                                                       getConfig)
+import           Twitter.Config                       (Environment (..))
 import           Twitter.Context                      (Context, EnvCxt (..),
                                                        buildCxt)
 import           Twitter.Model                        (TwitterError (..))
@@ -77,22 +74,16 @@ loggingM Development = logStdoutDev
 loggingM Production  = logStdout
 loggingM _           = id
 
-buildContext :: IO Context
-buildContext = do
-  config <- getConfig
-  cache <- C.newCache (Just (fromNanoSecs 30000000000))
-  return $ buildCxt config putStrLn cache
-
 runConfig :: Context -> ContextM a -> IO a
 runConfig cxt m = runReaderT (runContextM m) cxt
 
 app :: IO Application
 app = do
-  cxt <- buildContext
+  cxt <- buildCxt
   scottyAppT (runConfig cxt) (application (env cxt))
 
 runApp :: IO ()
-runApp = buildContext >>= runApplication
+runApp = buildCxt >>= runApplication
 
 runApplication :: Context -> IO ()
 runApplication cxt = scottyOptsT (getOptions e) (runConfig cxt) (application e)
