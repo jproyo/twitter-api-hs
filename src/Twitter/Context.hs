@@ -6,8 +6,8 @@ module Twitter.Context
   LogCxt(..),
   ConfigCxt(..),
   CacheCxt(..),
-  EnvCxt(..),
-  buildCxt
+  EnvCtx(..),
+  buildCtx
   ) where
 
 import           Control.Monad.IO.Class (MonadIO)
@@ -54,9 +54,9 @@ instance ConfigCxt Context where
 instance ConfigCxt Config where
   conf = id
 
-class EnvCxt a where
+class EnvCtx a where
   env :: a -> Environment
-instance EnvCxt Context where
+instance EnvCtx Context where
   env = environment . config
 
 class CacheCxt a where
@@ -81,5 +81,5 @@ getCache = C.newCache (Just (fromNanoSecs 30000000000))
 getLogger :: Config -> IO L.Logger
 getLogger c = L.new (L.setLogLevel (getLevel c) L.defSettings)
 
-buildCxt :: IO Context
-buildCxt = getConfig >>= \c -> Context c <$> getLogger c <*> getCache
+buildCtx :: IO Context
+buildCtx = getConfig >>= \c -> Context c <$> getLogger c <*> getCache

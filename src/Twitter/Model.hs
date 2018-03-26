@@ -28,7 +28,7 @@ data Tweet = Tweet {
   createdAt     :: Maybe UTCTime,
   retweetCount  :: Int,
   favoriteCount :: Int
-} deriving (Generic, Show)
+} deriving (Generic, Show, Eq)
 
 instance FromJSON Tweet where
     parseJSON (Object v) = do
@@ -48,13 +48,16 @@ type UserTimeLine = [Tweet]
 data TwitterError = RequestError { code :: Int }
                   | CredentialsError  { code :: Int }
                   | APIError  { code :: Int }
-                  deriving (Typeable, Data)
+                  deriving (Typeable, Data, Eq)
 
 instance Show TwitterError where
    show = showConstr . toConstr
 
 instance ToJSON TwitterError where
-  toJSON val = object [ "error" .= object [ "code" .= code val, "message" .= String (pack $ show val)] ]
+  toJSON val = object
+        [ "error" .= object
+                [ "code" .= code val, "message" .= String (pack $ show val)]
+        ]
 
 parseDate :: String -> Maybe UTCTime
 parseDate = parseTimeM True defaultTimeLocale "%a %h %d %T +0000 %Y"

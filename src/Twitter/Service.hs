@@ -5,7 +5,10 @@
 
 module Twitter.Service
   (
-  getUserTimeline
+  GetUserTimeLine,
+  TimeLineResponse,
+  getUserTimeline,
+  getTimeLine
   ) where
 
 import           Control.Applicative       ((<|>))

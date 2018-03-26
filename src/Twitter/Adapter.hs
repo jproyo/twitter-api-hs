@@ -16,7 +16,8 @@ import           Twitter.Context        (Context)
 import           Twitter.Model          (TwitterError, UserTimeLine)
 
 newtype Handle m = Handle
-  { timeline :: (MonadReader Context m, Monad m) => TimeLineRequest -> m TwitterResponse }
+  { timeline :: (MonadReader Context m, Monad m) =>
+        TimeLineRequest -> m TwitterResponse }
 
 type TwitterResponse = Maybe (Either TwitterError UserTimeLine)
 

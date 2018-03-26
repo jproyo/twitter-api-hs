@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b5a27f81909aafd1cd15d69e77e3d19fa8df458a10466ce99ee6732e012d025b
+-- hash: a7cbda6634f9da82c27b0bce7066edab60fde09773eac9f878962918a6f5734f
 
 name:           twitter-api-hs
 version:        0.1.0.0
@@ -131,6 +131,7 @@ test-suite spec
     , data-default
     , either
     , hspec ==2.*
+    , hspec-expectations-lifted
     , hspec-wai
     , hspec-wai-json
     , http-client
@@ -158,5 +159,6 @@ test-suite spec
       Twitter.Service
       Twitter.TwitterAdapter
       App.AppSpec
+      Twitter.ServiceSpec
       Paths_twitter_api_hs
   default-language: Haskell2010

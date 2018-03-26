@@ -15,11 +15,14 @@ import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
 import           Twitter.Context            (Context, LogCxt (..),
                                              readFromCache)
 
-cacheTimeLine :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse
+cacheTimeLine :: (MonadReader Context m, MonadIO m) =>
+        TimeLineRequest -> m TwitterResponse
 cacheTimeLine req = do
   cache <- ask
   fromCache <- liftIO (cache `readFromCache` userName req)
-  liftIO $ debug cache $ "Cache timeline for " <> userName req <> " value " <> maybe "[Nothing]" (const "[Cached Timeline]") fromCache
+  liftIO $ debug cache $
+        "Cache timeline for " <> userName req <>
+        " value " <> maybe "[Nothing]" (const "[Cached Timeline]") fromCache
   return $ maybeToEither fromCache
   where
     maybeToEither (Just val) = Just (Right val)

@@ -35,14 +35,16 @@ import           Twitter.Context            (Context, LogCxt (..), conf,
 import           Twitter.Model              (TwitterError, UserTimeLine,
                                              createError, credentialError)
 
-data Token = Token { tokenType :: Text, accessToken :: Text } deriving (Generic, Show)
+data Token = Token { tokenType :: Text, accessToken :: Text }
+        deriving (Generic, Show)
 
 instance FromJSON Token where
     parseJSON (Object v) = Token <$> v .: "token_type" <*> v .: "access_token"
     parseJSON _          = empty
 
 instance ToJSON Token where
-    toJSON (Token tToken aToken) = object ["token_type" .= tToken, "access_token" .= aToken]
+    toJSON (Token tToken aToken) = object
+        ["token_type" .= tToken, "access_token" .= aToken]
 
 type ApiResponse a m = m (Either TwitterError a)
 type TokenResponse m = ApiResponse Token m
@@ -51,11 +53,14 @@ type TimeLineResponse m = ApiResponse UserTimeLine m
 extractResponse :: (FromJSON a) => Request -> ApiResponse a IO
 extractResponse request = do
   response <- httpJSONEither request
-  let onError   _    = Left $ fromJust (createError (getResponseStatusCode response))
-      onSuccess resp = maybeToLeft resp (createError (getResponseStatusCode response))
+  let onError   _    =
+                Left $ fromJust (createError (getResponseStatusCode response))
+      onSuccess resp =
+                maybeToLeft resp (createError (getResponseStatusCode response))
   return $ either onError onSuccess (getResponseBody response)
 
-requestBearer :: (MonadReader Context m, MonadIO m) => Manager -> TokenResponse m
+requestBearer :: (MonadReader Context m, MonadIO m) =>
+        Manager -> TokenResponse m
 requestBearer manager = do
     config <- asks conf
     fromMaybeT (return $ Left credentialError) $ do
@@ -65,7 +70,8 @@ requestBearer manager = do
         let request'
                 = setRequestMethod "POST"
                 $ setRequestHeader "Authorization" [S8.concat ["Basic ", key]]
-                $ setRequestHeader "Content-Type" ["application/x-www-form-urlencoded;charset=UTF-8"]
+                $ setRequestHeader "Content-Type"
+                        ["application/x-www-form-urlencoded;charset=UTF-8"]
                 $ setRequestPath "/oauth2/token"
                 $ setRequestBodyLBS "grant_type=client_credentials"
                 $ setRequestSecure True
@@ -74,35 +80,53 @@ requestBearer manager = do
         extractResponse request'
 
 
-requestUserTimeline :: (MonadIO m) => Manager -> TimeLineRequest -> Token -> TimeLineResponse m
+authorizationToken :: Token -> [S8.ByteString]
+authorizationToken token =
+        [ S8.concat
+                [ E.encodeUtf8 (tokenType token)
+                , " "
+                , E.encodeUtf8 (accessToken token) ] ]
+
+setParamRequestTimeLine :: TimeLineRequest ->
+        [(S8.ByteString, Maybe S8.ByteString)]
+setParamRequestTimeLine timelineReq =
+        [ ("screen_name", Just (E.encodeUtf8 (userName timelineReq)))
+        , ("count", Just (toByteString' $ fromMaybe 10 (limit timelineReq))) ]
+
+requestUserTimeline :: (MonadIO m) =>
+        Manager -> TimeLineRequest -> Token -> TimeLineResponse m
 requestUserTimeline manager timelineReq token = liftIO $ do
   request <- parseRequest "https://api.twitter.com"
   let request'
           = setRequestMethod "GET"
-          $ setRequestHeader "Authorization" [S8.concat [E.encodeUtf8 (tokenType token), " ", E.encodeUtf8 (accessToken token)]]
+          $ setRequestHeader "Authorization" (authorizationToken token)
           $ setRequestPath "/1.1/statuses/user_timeline.json"
-          $ setQueryString [("screen_name", Just (E.encodeUtf8 (userName timelineReq))), ("count", Just (toByteString' $ fromMaybe 10 (limit timelineReq)))]
+          $ setQueryString (setParamRequestTimeLine timelineReq)
           $ setRequestSecure True
           $ setRequestPort 443
           $ setRequestManager manager request
   extractResponse request'
 
 
-cacheResult :: (MonadReader Context m, MonadIO m) => Text -> Either TwitterError UserTimeLine -> m ()
+cacheResult :: (MonadReader Context m, MonadIO m) =>
+        Text -> Either TwitterError UserTimeLine -> m ()
 cacheResult username result = do
   cxt <- ask
   liftIO $ either (\_ -> return ()) (putInCache cxt username) result
 
-userTimeline :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> TimeLineResponse m
+userTimeline :: (MonadReader Context m, MonadIO m) =>
+        TimeLineRequest -> TimeLineResponse m
 userTimeline timelineReq = runExceptT $ do
   httpConnManager <- liftIO $ newManager tlsManagerSettings
   bearer <- ExceptT $ requestBearer httpConnManager
   ExceptT $ requestUserTimeline httpConnManager timelineReq bearer
 
-searchAndCache :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse
+searchAndCache :: (MonadReader Context m, MonadIO m) =>
+        TimeLineRequest -> m TwitterResponse
 searchAndCache timelineReq = do
   cxt <- ask
-  liftIO $ debug cxt $ "Searching timeline in Twitter API for " <> pack (show timelineReq)
+  liftIO $ debug cxt $
+        "Searching timeline in Twitter API for " <> pack (show timelineReq)
   result <- userTimeline timelineReq
   cacheResult (userName timelineReq) result
   return (Just result)

@@ -22,8 +22,8 @@ import           Network.Wai.Handler.Warp             (Settings,
                                                        setPort)
 import           Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
 import           Twitter.Config                       (Environment (..))
-import           Twitter.Context                      (Context, EnvCxt (..),
-                                                       buildCxt)
+import           Twitter.Context                      (Context, EnvCtx (..),
+                                                       buildCtx)
 import           Twitter.Model                        (TwitterError (..))
 import           Twitter.Service                      (getUserTimeline)
 import           Web.Scotty.Trans                     (ActionT, Options,
@@ -79,16 +79,16 @@ runConfig cxt m = runReaderT (runContextM m) cxt
 
 app :: IO Application
 app = do
-  cxt <- buildCxt
-  scottyAppT (runConfig cxt) (application (env cxt))
+  ctx <- buildCtx
+  scottyAppT (runConfig ctx) (application (env ctx))
 
 runApp :: IO ()
-runApp = buildCxt >>= runApplication
+runApp = buildCtx >>= runApplication
 
 runApplication :: Context -> IO ()
-runApplication cxt = scottyOptsT (getOptions e) (runConfig cxt) (application e)
+runApplication ctx = scottyOptsT (getOptions e) (runConfig ctx) (application e)
   where
-    e = env cxt
+    e = env ctx
 
 application :: Environment -> ScottyT Error ContextM ()
 application e = do
@@ -107,10 +107,10 @@ rootAction = json $ object
 
 userTimelineAction :: Action
 userTimelineAction = do
-  cxt      <- lift ask
+  ctx      <- lift ask
   userName <- param "userName"
   limit    <- param "limit" `rescue` (\_ -> return 10)
-  timeline <- liftIO $ runReaderT (getUserTimeline userName (Just limit)) cxt
+  timeline <- liftIO $ runReaderT (getUserTimeline userName (Just limit)) ctx
   let statusAndResponse err = status (mkStatus (code err) (pack $ show err)) >> json err
       in either statusAndResponse json timeline
 
