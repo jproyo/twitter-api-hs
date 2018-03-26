@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances  #-}
+
 module Twitter.Service
   (
   getUserTimeline
@@ -18,16 +21,24 @@ import           Twitter.Context           (Context)
 import           Twitter.Model             (TwitterError, UserTimeLine)
 import qualified Twitter.TwitterAdapter    as TA
 
-getTimeLine :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m (Either TwitterError UserTimeLine)
-getTimeLine request = fromJust
-  <$> runMaybeT (MaybeT (getFromCache   request)
-             <|> MaybeT (getFromTwitter request))
+type TimeLineResponse = Either TwitterError UserTimeLine
+type GetUserTimeLine m = TimeLineRequest -> m (Maybe TimeLineResponse)
 
-getFromCache :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m (Maybe (Either TwitterError UserTimeLine))
+getFromCache :: (MonadReader Context m, MonadIO m) =>
+        TimeLineRequest -> m (Maybe TimeLineResponse)
 getFromCache = timeline CA.newHandle
 
-getFromTwitter :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m (Maybe (Either TwitterError UserTimeLine))
+getFromTwitter :: (MonadReader Context m, MonadIO m) =>
+        TimeLineRequest -> m (Maybe TimeLineResponse)
 getFromTwitter = timeline TA.newHandle
 
-getUserTimeline :: (MonadReader Context m, MonadIO m) => Text -> Maybe Int -> m (Either TwitterError UserTimeLine)
-getUserTimeline userName limit = getTimeLine $ createTimeLineRequest userName limit
+getTimeLine :: MonadReader Context m => TimeLineRequest ->
+        GetUserTimeLine m -> GetUserTimeLine m -> m TimeLineResponse
+getTimeLine request fromCache fromAPI = fromJust <$>
+        runMaybeT (MaybeT (fromCache request)
+               <|> MaybeT (fromAPI   request))
+
+getUserTimeline :: (MonadReader Context m, MonadIO m) =>
+        Text -> Maybe Int -> m TimeLineResponse
+getUserTimeline userName limit = getTimeLine
+        (createTimeLineRequest userName limit) getFromCache getFromTwitter

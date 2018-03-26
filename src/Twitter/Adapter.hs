@@ -10,14 +10,13 @@ module Twitter.Adapter
   , createTimeLineRequest
   ) where
 
-import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader   (MonadReader)
 import           Data.Text              (Text)
 import           Twitter.Context        (Context)
 import           Twitter.Model          (TwitterError, UserTimeLine)
 
 newtype Handle m = Handle
-  { timeline :: (MonadReader Context m, MonadIO m) => TimeLineRequest -> m TwitterResponse }
+  { timeline :: (MonadReader Context m, Monad m) => TimeLineRequest -> m TwitterResponse }
 
 type TwitterResponse = Maybe (Either TwitterError UserTimeLine)
 

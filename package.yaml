@@ -1,0 +1,81 @@
+name:                twitter-api-hs
+version:             0.1.0.0
+#synopsis:
+#description:
+github:              jproyo/twitter-api-hs
+license:             BSD3
+author:              Juan Pablo Royo Sales
+maintainer:          juanpablo.royo@gmail.com
+copyright:           2018 Juan Pablo Royo Sales
+category:            api
+extra-source-files:
+- README.md
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
+
+dependencies:
+  - base >= 4.7 && < 5
+  - aeson
+  - base64-bytestring
+  - bytestring
+  - bytestring-conversion
+  - cache
+  - clock
+  - data-default
+  - either
+  - http-client
+  - http-client-tls
+  - http-conduit
+  - http-types
+  - mtl
+  - scotty
+  - text
+  - time
+  - tinylog
+  - transformers
+  - wai
+  - wai-extra
+  - warp
+  - yaml
+
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Twitter.Config
+    - Twitter.Context
+    - Twitter.Service
+
+default-extensions:
+  - OverloadedStrings
+
+executables:
+  twitter-api:
+    source-dirs:
+      - app
+      - src
+    main: Main.hs
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - src
+      - test
+    ghc-options:
+      - -threaded
+      - -O2
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - aeson
+      - hspec == 2.*
+      - hspec-wai
+      - hspec-wai-json
+      - http-types
+      - QuickCheck
