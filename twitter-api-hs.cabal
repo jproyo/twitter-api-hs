@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a7cbda6634f9da82c27b0bce7066edab60fde09773eac9f878962918a6f5734f
+-- hash: 4595dc2c48b11b1eda9bd43253bae25a15b7884df4bcc4a496e0104d97d87d4f
 
 name:           twitter-api-hs
 version:        0.1.0.0
@@ -54,15 +54,16 @@ library
     , warp
     , yaml
   exposed-modules:
+      App
+      Twitter.Adapter
       Twitter.Config
       Twitter.Context
+      Twitter.Model
       Twitter.Service
   other-modules:
-      App
       Core.Utils
-      Twitter.Adapter
       Twitter.CacheAdapter
-      Twitter.Model
+      Twitter.CacheStoreAdapter
       Twitter.TwitterAdapter
       Paths_twitter_api_hs
   default-language: Haskell2010
@@ -103,6 +104,7 @@ executable twitter-api
       Core.Utils
       Twitter.Adapter
       Twitter.CacheAdapter
+      Twitter.CacheStoreAdapter
       Twitter.Config
       Twitter.Context
       Twitter.Model
@@ -115,7 +117,6 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   hs-source-dirs:
-      src
       test
   default-extensions: OverloadedStrings
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -threaded -O2 -rtsopts -with-rtsopts=-N
@@ -144,20 +145,12 @@ test-suite spec
     , time
     , tinylog
     , transformers
+    , twitter-api-hs
     , wai
     , wai-extra
     , warp
     , yaml
   other-modules:
-      App
-      Core.Utils
-      Twitter.Adapter
-      Twitter.CacheAdapter
-      Twitter.Config
-      Twitter.Context
-      Twitter.Model
-      Twitter.Service
-      Twitter.TwitterAdapter
       App.AppSpec
       Twitter.ServiceSpec
       Paths_twitter_api_hs

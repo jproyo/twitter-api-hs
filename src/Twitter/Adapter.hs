@@ -7,6 +7,7 @@ module Twitter.Adapter
     Handle(..)
   , TimeLineRequest(userName,limit)
   , TwitterResponse
+  , TimeLineResponse
   , createTimeLineRequest
   ) where
 
@@ -20,6 +21,7 @@ newtype Handle m = Handle
         TimeLineRequest -> m TwitterResponse }
 
 type TwitterResponse = Maybe (Either TwitterError UserTimeLine)
+type TimeLineResponse = Either TwitterError UserTimeLine
 
 data TimeLineRequest = TimeLineRequest
   { userName :: Text

@@ -30,8 +30,7 @@ import           Network.HTTP.Simple
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterResponse)
 import           Twitter.Config             (twitterEncKey)
-import           Twitter.Context            (Context, LogCxt (..), conf,
-                                             putInCache)
+import           Twitter.Context            (Context, LogCxt (..), conf)
 import           Twitter.Model              (TwitterError, UserTimeLine,
                                              createError, credentialError)
 
@@ -107,13 +106,6 @@ requestUserTimeline manager timelineReq token = liftIO $ do
           $ setRequestManager manager request
   extractResponse request'
 
-
-cacheResult :: (MonadReader Context m, MonadIO m) =>
-        Text -> Either TwitterError UserTimeLine -> m ()
-cacheResult username result = do
-  cxt <- ask
-  liftIO $ either (\_ -> return ()) (putInCache cxt username) result
-
 userTimeline :: (MonadReader Context m, MonadIO m) =>
         TimeLineRequest -> TimeLineResponse m
 userTimeline timelineReq = runExceptT $ do
@@ -128,7 +120,6 @@ searchAndCache timelineReq = do
   liftIO $ debug cxt $
         "Searching timeline in Twitter API for " <> pack (show timelineReq)
   result <- userTimeline timelineReq
-  cacheResult (userName timelineReq) result
   return (Just result)
 
 newHandle :: (MonadReader Context m, MonadIO m) => Handle m
