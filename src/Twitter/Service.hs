@@ -6,7 +6,7 @@
 module Twitter.Service
   (
   GetUserTimeLine,
-  TimeLineResponse,
+  StoreUserTimeLine,
   getUserTimeline,
   getTimeLine
   ) where
@@ -18,13 +18,12 @@ import           Control.Monad.Reader      (MonadReader)
 import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Data.Maybe                (fromJust)
 import           Data.Text                 (Text)
-import           Twitter.Adapter           (TimeLineRequest, TwitterResponse,
-                                            TimeLineResponse,
+import           Twitter.Adapter           (TimeLineRequest, TimeLineResponse,
+                                            TwitterResponse,
                                             createTimeLineRequest, timeline)
 import           Twitter.CacheAdapter      as CA
 import           Twitter.CacheStoreAdapter as CS
 import           Twitter.Context           (Context)
-import           Twitter.Model             (TwitterError, UserTimeLine)
 import qualified Twitter.TwitterAdapter    as TA
 
 type GetUserTimeLine m = TimeLineRequest -> m TwitterResponse
