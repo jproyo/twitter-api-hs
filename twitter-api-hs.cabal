@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4595dc2c48b11b1eda9bd43253bae25a15b7884df4bcc4a496e0104d97d87d4f
+-- hash: bbe1b3dd4e90c7d6dbbb7b1e60c036675db95a55b0f5b2217faf9186dcc8ace5
 
 name:           twitter-api-hs
 version:        0.1.0.0
@@ -63,7 +63,6 @@ library
   other-modules:
       Core.Utils
       Twitter.CacheAdapter
-      Twitter.CacheStoreAdapter
       Twitter.TwitterAdapter
       Paths_twitter_api_hs
   default-language: Haskell2010
@@ -104,7 +103,6 @@ executable twitter-api
       Core.Utils
       Twitter.Adapter
       Twitter.CacheAdapter
-      Twitter.CacheStoreAdapter
       Twitter.Config
       Twitter.Context
       Twitter.Model

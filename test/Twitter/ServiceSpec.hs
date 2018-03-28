@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Twitter.ServiceSpec (spec) where
 
@@ -15,18 +17,26 @@ import           Twitter.Service
 spec :: Spec
 spec = describe "getTimeLine using mocking" $ do
         it "should responds from cache if exist there first" $ do
-                cache <- getFrom (mockFrom $ expected "cache" "user") mockNothing mockStoreCache
+                cache <- getFrom MockCache GetDoNothing StoreDoNothing
                 cache `shouldBe` expected "cache" "user"
         it "should responds from twitter if it doesnt exist in cache" $ do
-                twitter <- getFrom mockNothing (mockFrom $ expected "twitter" "user") mockStoreCache
+                twitter <- getFrom GetDoNothing MockApi MockStore
                 twitter `shouldBe` expected "twitter" "user"
 
 
-getFrom :: MonadIO m =>
-        GetUserTimeLine (ReaderT Context IO) ->
-        GetUserTimeLine (ReaderT Context IO) ->
-        StoreUserTimeLine (ReaderT Context IO) ->
-        m TimeLineResponse
+data MyMockOp = MockCache | MockApi | MockStore | StoreDoNothing | GetDoNothing
+
+instance (MonadReader Context m, MonadIO m) =>
+        GetUserTimeLineAdapter MyMockOp m where
+        execute MockCache = GetUserTimeLine (\_ -> return $ return $ expected "cache" "user")
+        execute MockApi   = GetUserTimeLine (\_ -> return $ return $ expected "twitter" "user")
+        execute MockStore = StoreUserTimeLine (\_ _ -> return $ return $ expected "twitter" "user")
+        execute StoreDoNothing = StoreUserTimeLine (\_ _ -> return Nothing)
+        execute GetDoNothing = GetUserTimeLine (\_ -> return Nothing)
+
+
+getFrom :: (GetUserTimeLineAdapter a (ReaderT Context IO), MonadIO m) =>
+                       a -> a -> a -> m TimeLineResponse
 getFrom mockCache mockTwitter mockStore = do
         ctx <- liftIO buildCtx
         liftIO $ runReaderT (getTimeLine request mockCache mockTwitter mockStore) ctx
@@ -34,15 +44,6 @@ getFrom mockCache mockTwitter mockStore = do
 
 request :: TimeLineRequest
 request = createTimeLineRequest "someuser" (Just 10)
-
-mockNothing :: MonadReader Context m => GetUserTimeLine m
-mockNothing _ = return Nothing
-
-mockFrom :: MonadReader Context m => TimeLineResponse -> GetUserTimeLine m
-mockFrom tweets _ = return (Just tweets)
-
-mockStoreCache :: MonadReader Context m => StoreUserTimeLine m
-mockStoreCache _ res = return res
 
 expected :: Text -> Text -> TimeLineResponse
 expected textTweet user = Right

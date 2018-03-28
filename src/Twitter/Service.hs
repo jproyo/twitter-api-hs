@@ -5,8 +5,8 @@
 
 module Twitter.Service
   (
-  GetUserTimeLine,
-  StoreUserTimeLine,
+  GetUserTimeLineAdapter(..),
+  TimeLineOpeartion(..),
   getUserTimeline,
   getTimeLine
   ) where
@@ -22,36 +22,38 @@ import           Twitter.Adapter           (TimeLineRequest, TimeLineResponse,
                                             TwitterResponse,
                                             createTimeLineRequest, timeline)
 import           Twitter.CacheAdapter      as CA
-import           Twitter.CacheStoreAdapter as CS
 import           Twitter.Context           (Context)
 import qualified Twitter.TwitterAdapter    as TA
 
-type GetUserTimeLine m = TimeLineRequest -> m TwitterResponse
-type StoreUserTimeLine m = TimeLineRequest -> Maybe TimeLineResponse -> m TwitterResponse
 
-storeInCache :: (MonadReader Context m, MonadIO m) => StoreUserTimeLine m
-storeInCache = CS.cacheStoreTimeLine
+data TimeLineOpeartion m =
+          GetUserTimeLine { get :: TimeLineRequest -> m TwitterResponse }
+        | StoreUserTimeLine { store ::
+                TimeLineRequest -> Maybe TimeLineResponse -> m TwitterResponse }
 
-getFromCache :: (MonadReader Context m, MonadIO m) => GetUserTimeLine m
-getFromCache = timeline CA.newHandle
+data UserTimeLineOp = GetFromCache | GetFromAPI | StoreCache
 
-getFromTwitter :: (MonadReader Context m, MonadIO m) => GetUserTimeLine m
-getFromTwitter = timeline TA.newHandle
+class (MonadReader Context m, Monad m) => GetUserTimeLineAdapter a m where
+        execute :: a -> TimeLineOpeartion m
 
+instance (MonadReader Context m, MonadIO m) =>
+        GetUserTimeLineAdapter UserTimeLineOp m where
+        execute GetFromCache = GetUserTimeLine (timeline CA.newHandle)
+        execute GetFromAPI   = GetUserTimeLine (timeline TA.newHandle)
+        execute StoreCache   = StoreUserTimeLine CA.cacheStoreTimeLine
 
 getUserTimeline :: (MonadReader Context m, MonadIO m) =>
         Text -> Maybe Int -> m TimeLineResponse
-getUserTimeline userName limit = getTimeLine req cache api store
-        where req   = createTimeLineRequest userName limit
-              cache = getFromCache
-              api   = getFromTwitter
-              store = storeInCache
+getUserTimeline userName limit = getTimeLine req GetFromCache GetFromAPI StoreCache
+        where req = createTimeLineRequest userName limit
 
-getTimeLine :: MonadReader Context m => TimeLineRequest ->
-        GetUserTimeLine m -> GetUserTimeLine m ->
-        StoreUserTimeLine m -> m TimeLineResponse
-getTimeLine request fromCache fromAPI storeCache =
-        fromJust <$> runMaybeT (cache <|> apiAndStore)
-        where cache       = MaybeT (fromCache request)
-              store       = storeCache request
-              apiAndStore = MaybeT ((fromAPI >=> store) request)
+
+getTimeLine :: (MonadReader Context m, GetUserTimeLineAdapter a m) =>
+        TimeLineRequest -> a -> a -> a -> m TimeLineResponse
+getTimeLine req getFromCache getFromApi storeIntoCache =
+                fromJust <$> runMaybeT (cache <|> apiAndStore)
+        where cache       = MaybeT (fromCache req)
+              apiAndStore = MaybeT ((api >=> storeCache) req)
+              fromCache   = get (execute getFromCache)
+              api         = get (execute getFromApi)
+              storeCache  = store (execute storeIntoCache) req
