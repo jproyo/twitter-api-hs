@@ -111,7 +111,7 @@ userTimelineAction = do
   userName <- param "userName"
   limit    <- param "limit" `rescue` (\_ -> return 10)
   timeline <- liftIO $ runReaderT (getUserTimeline userName (Just limit)) ctx
-  let statusAndResponse err = status (mkStatus (code err) (pack $ show err)) >> json err
+  let statusAndResponse err = status (mkStatus (fromIntegral $ code err) (pack $ show err)) >> json err
       in either statusAndResponse json timeline
 
 notFoundA :: Action

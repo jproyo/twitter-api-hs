@@ -44,7 +44,7 @@ instance (MonadReader Context m, MonadIO m) =>
         execute StoreCache   = StoreUserTimeLine CA.cacheStoreTimeLine
 
 getUserTimeline :: (MonadReader Context m, MonadIO m) =>
-        Text -> Maybe Int -> m TimeLineResponse
+        Text -> Maybe Integer -> m TimeLineResponse
 getUserTimeline userName limit =
         getTimeLine req GetFromCache GetFromAPI StoreCache
             where req = createTimeLineRequest userName limit

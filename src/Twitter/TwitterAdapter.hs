@@ -53,9 +53,9 @@ extractResponse :: (FromJSON a) => Request -> ApiResponse a IO
 extractResponse request = do
     response <- httpJSONEither request
     let onError   _    =
-            Left $ fromJust (createError (getResponseStatusCode response))
+            Left $ fromJust (createError (fromIntegral $ getResponseStatusCode response))
         onSuccess resp =
-            maybeToLeft resp (createError (getResponseStatusCode response))
+            maybeToLeft resp (createError (fromIntegral $ getResponseStatusCode response))
     return $ either onError onSuccess (getResponseBody response)
 
 requestBearer :: (MonadReader Context m, MonadIO m) => Manager -> TokenResponse m
