@@ -48,6 +48,7 @@ library:
   source-dirs: src
   exposed-modules:
     - App
+    - Core.Utils
     - Twitter.Adapter
     - Twitter.Config
     - Twitter.Context
