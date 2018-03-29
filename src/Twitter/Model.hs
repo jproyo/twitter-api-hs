@@ -4,7 +4,7 @@
 
 module Twitter.Model (
 TwitterError(..),
-Tweet(text,userName,createdAt,retweetCount,favoriteCount),
+Tweet(..),
 UserTimeLine,
 createTweet,
 createError,
@@ -22,23 +22,22 @@ import           Data.Time.Clock     (UTCTime)
 import           Data.Time.Format    (defaultTimeLocale, parseTimeM)
 import           GHC.Generics        (Generic)
 
-data Tweet = Tweet {
-  text          :: Text,
-  userName      :: Text,
-  createdAt     :: Maybe UTCTime,
-  retweetCount  :: Int,
-  favoriteCount :: Int
-} deriving (Generic, Show, Eq)
+data Tweet = Tweet
+    { text          :: Text
+    , userName      :: Text
+    , createdAt     :: Maybe UTCTime
+    , retweetCount  :: Int
+    , favoriteCount :: Int } deriving (Generic, Show, Eq)
 
 instance FromJSON Tweet where
     parseJSON (Object v) = do
-      text <- v .: "text"
-      userName <- (v .: "user") >>= (.: "screen_name")
-      createdAtStr <- v .: "created_at"
-      let createdAt = parseDate createdAtStr
-      retweetCount <- v .: "retweet_count"
-      favoriteCount <- v .: "favorite_count"
-      return Tweet{..}
+        text <- v .: "text"
+        userName <- (v .: "user") >>= (.: "screen_name")
+        createdAtStr <- v .: "created_at"
+        let createdAt = parseDate createdAtStr
+        retweetCount <- v .: "retweet_count"
+        favoriteCount <- v .: "favorite_count"
+        return Tweet{..}
     parseJSON _          = empty
 
 instance ToJSON Tweet
@@ -51,12 +50,12 @@ data TwitterError = RequestError { code :: Int }
                   deriving (Typeable, Data, Eq)
 
 instance Show TwitterError where
-   show = showConstr . toConstr
+    show = showConstr . toConstr
 
 instance ToJSON TwitterError where
-  toJSON val = object
+    toJSON val = object
         [ "error" .= object
-                [ "code" .= code val, "message" .= String (pack $ show val)]
+            [ "code" .= code val, "message" .= String (pack $ show val)]
         ]
 
 parseDate :: String -> Maybe UTCTime

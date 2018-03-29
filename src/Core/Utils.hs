@@ -1,6 +1,8 @@
+
 module Core.Utils(
-fromMaybeT,
-maybeToLeft
+      fromMaybeT
+    , maybeToLeft
+    , maybeToEither
 ) where
 
 import           Control.Monad             ((<=<))
@@ -12,3 +14,8 @@ fromMaybeT onFail = maybe onFail return <=< runMaybeT
 maybeToLeft :: b -> Maybe a -> Either a b
 maybeToLeft _ (Just x) = Left x
 maybeToLeft y Nothing  = Right y
+
+
+maybeToEither :: Maybe b -> Maybe (Either a b)
+maybeToEither (Just val) = Just (Right val)
+maybeToEither Nothing    = Nothing

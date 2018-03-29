@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module App.AppSpec (spec) where
 
@@ -17,9 +17,13 @@ spec = with app $
       get "/" `shouldRespondWith` 200
 
     it "get on / responds with '{endpoints:{user_timeline:/user/{userName}/timeline}}' and 200 and headers" $
-      get "/" `shouldRespondWith` expectRootJsonResponse {matchStatus = 200} {matchHeaders = ["Content-Type" <:> "application/json; charset=utf-8"]}
+      get "/" `shouldRespondWith`
+        expectRootJsonResponse
+        {matchStatus = 200}
+        {matchHeaders = ["Content-Type" <:> "application/json; charset=utf-8"]}
 
 expectRootJsonResponse :: ResponseMatcher
 expectRootJsonResponse =
-  let ResponseMatcher status _ body = [json|{endpoints: {user_timeline: "/user/{userName}/timeline"}}|]
+  let ResponseMatcher status _ body =
+        [json|{endpoints: {user_timeline: "/user/{userName}/timeline"}}|]
   in ResponseMatcher status [hContentType <:> "application/json; charset=utf-8"] body

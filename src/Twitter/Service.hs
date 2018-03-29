@@ -1,4 +1,3 @@
-{-# LANGUAGE ExplicitForAll        #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -29,7 +28,7 @@ import qualified Twitter.TwitterAdapter    as TA
 
 
 data TimeLineOpeartion m =
-          GetUserTimeLine { get :: TimeLineRequest -> m TwitterResponse }
+          GetUserTimeLine   { get :: TimeLineRequest -> m TwitterResponse }
         | StoreUserTimeLine { store ::
                 TimeLineRequest -> Maybe TimeLineResponse -> m TwitterResponse }
 
@@ -46,16 +45,16 @@ instance (MonadReader Context m, MonadIO m) =>
 
 getUserTimeline :: (MonadReader Context m, MonadIO m) =>
         Text -> Maybe Int -> m TimeLineResponse
-getUserTimeline userName limit = getTimeLine req GetFromCache GetFromAPI StoreCache
-        where req = createTimeLineRequest userName limit
+getUserTimeline userName limit =
+        getTimeLine req GetFromCache GetFromAPI StoreCache
+            where req = createTimeLineRequest userName limit
 
 
-getTimeLine :: forall a b c m.
-        ( MonadReader Context m
-        , GetUserTimeLineAdapter a m
-        , GetUserTimeLineAdapter b m
-        , GetUserTimeLineAdapter c m) =>
-        TimeLineRequest -> a -> b -> c -> m TimeLineResponse
+getTimeLine :: ( MonadReader Context m
+                , GetUserTimeLineAdapter a m
+                , GetUserTimeLineAdapter b m
+                , GetUserTimeLineAdapter c m) =>
+                TimeLineRequest -> a -> b -> c -> m TimeLineResponse
 getTimeLine req getFromCache getFromApi storeIntoCache =
                 fromJust <$> runMaybeT (cache <|> apiAndStore)
         where cache       = MaybeT (fromCache req)

@@ -23,51 +23,50 @@ import           Twitter.Config         (Config (..), Environment (..),
 import           Twitter.Model          (UserTimeLine)
 
 data Context = Context
-  { config :: Config
-  , logger :: L.Logger
-  , cache  :: C.Cache Text UserTimeLine
-  }
+    { config :: Config
+    , logger :: L.Logger
+    , cache  :: C.Cache Text UserTimeLine }
 
 class LogCxt a where
-  logC :: a -> L.Logger
-  putLog :: (MonadIO m) => (Logger -> (Msg -> Msg) -> m ()) -> a -> Text -> m ()
-  putLog f c = f (logC c) . msg
-  trace :: a -> Text -> IO ()
-  trace = putLog L.trace
-  debug :: a -> Text -> IO ()
-  debug = putLog L.debug
-  info :: a -> Text -> IO ()
-  info = putLog L.info
-  err :: a -> Text -> IO ()
-  err = putLog L.err
-  warn :: a -> Text -> IO ()
-  warn = putLog L.warn
+    logC :: a -> L.Logger
+    putLog :: (MonadIO m) => (Logger -> (Msg -> Msg) -> m ()) -> a -> Text -> m ()
+    putLog f c = f (logC c) . msg
+    trace :: a -> Text -> IO ()
+    trace = putLog L.trace
+    debug :: a -> Text -> IO ()
+    debug = putLog L.debug
+    info :: a -> Text -> IO ()
+    info = putLog L.info
+    err :: a -> Text -> IO ()
+    err = putLog L.err
+    warn :: a -> Text -> IO ()
+    warn = putLog L.warn
 instance LogCxt Context where
-  logC = logger
+    logC = logger
 instance LogCxt L.Logger where
-  logC = id
+    logC = id
 
 class ConfigCxt a where
-  conf :: a -> Config
+    conf :: a -> Config
 instance ConfigCxt Context where
-  conf = config
+    conf = config
 instance ConfigCxt Config where
-  conf = id
+    conf = id
 
 class EnvCtx a where
-  env :: a -> Environment
+    env :: a -> Environment
 instance EnvCtx Context where
-  env = environment . config
+    env = environment . config
 
 class CacheCxt a where
-  putInCache :: a -> Text -> UserTimeLine -> IO ()
-  readFromCache :: a -> Text -> IO (Maybe UserTimeLine)
+    putInCache :: a -> Text -> UserTimeLine -> IO ()
+    readFromCache :: a -> Text -> IO (Maybe UserTimeLine)
 instance CacheCxt (C.Cache Text UserTimeLine) where
-  putInCache     = C.insert
-  readFromCache  = C.lookup
+    putInCache     = C.insert
+    readFromCache  = C.lookup
 instance CacheCxt Context where
-  putInCache    cxt  = putInCache    (cache cxt)
-  readFromCache cxt  = readFromCache (cache cxt)
+    putInCache    cxt  = putInCache    (cache cxt)
+    readFromCache cxt  = readFromCache (cache cxt)
 
 
 getLevel :: Config -> Level
