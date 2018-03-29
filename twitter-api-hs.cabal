@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1189a34c99c33ab43b85b4c3cc10f2f81177bb7bb311bbfe75324a86e9d9e923
+-- hash: 155953ec6a0905e122f735ba45816d78ec276738d7add656d06d0eabfb12f867
 
 name:           twitter-api-hs
 version:        0.1.0.0
@@ -55,13 +55,13 @@ library
     , yaml
   exposed-modules:
       App
-      Core.Utils
       Twitter.Adapter
       Twitter.Config
       Twitter.Context
       Twitter.Model
       Twitter.Service
   other-modules:
+      Core.Utils
       Twitter.CacheAdapter
       Twitter.TwitterAdapter
       Paths_twitter_api_hs
@@ -115,6 +115,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   hs-source-dirs:
+      src
       test
   default-extensions: OverloadedStrings
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -threaded -O2 -rtsopts -with-rtsopts=-N
@@ -143,12 +144,20 @@ test-suite spec
     , time
     , tinylog
     , transformers
-    , twitter-api-hs
     , wai
     , wai-extra
     , warp
     , yaml
   other-modules:
+      App
+      Core.Utils
+      Twitter.Adapter
+      Twitter.CacheAdapter
+      Twitter.Config
+      Twitter.Context
+      Twitter.Model
+      Twitter.Service
+      Twitter.TwitterAdapter
       App.AppSpec
       Core.UtilsSpec
       Twitter.ServiceSpec

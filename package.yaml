@@ -48,7 +48,6 @@ library:
   source-dirs: src
   exposed-modules:
     - App
-    - Core.Utils
     - Twitter.Adapter
     - Twitter.Config
     - Twitter.Context
@@ -69,6 +68,7 @@ tests:
   spec:
     main: Spec.hs
     source-dirs:
+      - src
       - test
     ghc-options:
       - -threaded
@@ -84,4 +84,3 @@ tests:
       - http-types
       - mtl
       - QuickCheck
-      - twitter-api-hs
