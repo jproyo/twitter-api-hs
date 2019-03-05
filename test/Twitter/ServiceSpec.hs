@@ -1,20 +1,20 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralisedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeApplications           #-}
 
 module Twitter.ServiceSpec (spec) where
 
-import Control.Monad.IO.Class
-import Control.Monad.Reader
-import Control.Monad.Trans.Identity
-import Data.Text
-import Test.Hspec
-import Twitter.Adapter
-import Twitter.Context
-import Twitter.Model
-import Twitter.Service
+import           Control.Monad.IO.Class
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Identity
+import           Data.Text
+import           Test.Hspec
+import           Twitter.Adapter
+import           Twitter.Context
+import           Twitter.Model
+import           Twitter.Service
 
 
 spec :: Spec
