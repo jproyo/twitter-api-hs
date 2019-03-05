@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 155953ec6a0905e122f735ba45816d78ec276738d7add656d06d0eabfb12f867
+-- hash: 12607d4e12300c1aca1ecf52e7d9a82b6baf34e588fe8d4fa17b4bf53cf2ef16
 
 name:           twitter-api-hs
 version:        0.1.0.0
@@ -15,8 +17,6 @@ copyright:      2018 Juan Pablo Royo Sales
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-cabal-version:  >= 1.10
-
 extra-source-files:
     README.md
 
