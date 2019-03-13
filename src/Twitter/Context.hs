@@ -1,50 +1,29 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Twitter.Context
   (
-  Context,
-  LogCxt(..),
+  Context(..),
+  Logging(..),
   ConfigCxt(..),
   CacheCxt(..),
   EnvCtx(..),
   buildCtx
   ) where
 
-import           Control.Monad.IO.Class (MonadIO)
-import           Data.Cache             as C (Cache, insert, lookup, newCache)
-import           Data.Text              (Text)
-import           System.Clock           (fromNanoSecs)
-import           System.Logger          as L (Level (..), Logger, debug,
-                                              defSettings, err, info, new,
-                                              setLogLevel, trace, warn)
-import           System.Logger.Message  (Msg, msg)
-import           Twitter.Config         (Config (..), Environment (..),
-                                         getConfig)
-import           Twitter.Model          (UserTimeLine)
+import           Control.Monad.Reader (MonadReader)
+import           Data.Cache           as C (Cache, insert, lookup, newCache)
+import           Data.Text            (Text)
+import           System.Clock         (fromNanoSecs)
+import           System.Logger        as L (Level (..), Logger, defSettings,
+                                            new, setLogLevel)
+import           Twitter.Config       (Config (..), Environment (..), getConfig)
+import           Twitter.Model        (UserTimeLine)
 
 data Context = Context
     { config :: Config
     , logger :: L.Logger
     , cache  :: C.Cache Text UserTimeLine }
-
-class LogCxt a where
-    logC :: a -> L.Logger
-    putLog :: (MonadIO m) => (Logger -> (Msg -> Msg) -> m ()) -> a -> Text -> m ()
-    putLog f c = f (logC c) . msg
-    trace :: a -> Text -> IO ()
-    trace = putLog L.trace
-    debug :: a -> Text -> IO ()
-    debug = putLog L.debug
-    info :: a -> Text -> IO ()
-    info = putLog L.info
-    err :: a -> Text -> IO ()
-    err = putLog L.err
-    warn :: a -> Text -> IO ()
-    warn = putLog L.warn
-instance LogCxt Context where
-    logC = logger
-instance LogCxt L.Logger where
-    logC = id
 
 class ConfigCxt a where
     conf :: a -> Config
@@ -67,6 +46,19 @@ instance CacheCxt (C.Cache Text UserTimeLine) where
 instance CacheCxt Context where
     putInCache    cxt  = putInCache    (cache cxt)
     readFromCache cxt  = readFromCache (cache cxt)
+
+class MonadReader Context m => Logging m where
+  {-# MINIMAL logMsg  #-}
+  logMsg :: Level -> Text -> m ()
+
+  info :: Text -> m ()
+  info = logMsg Info
+
+  debug :: Text -> m ()
+  debug = logMsg Debug
+
+  err :: Text -> m ()
+  err = logMsg Error
 
 
 getLevel :: Config -> Level

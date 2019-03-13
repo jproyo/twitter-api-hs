@@ -26,7 +26,7 @@ import           Twitter.Context                      (Context, EnvCtx (..),
                                                        buildCtx)
 import           Twitter.Model                        (TwitterError (..))
 import           Twitter.Service                      (getUserTimeline,
-                                                       runService)
+                                                       unServiceApp)
 import           Web.Scotty.Trans                     (ActionT, Options,
                                                        ScottyT, defaultHandler,
                                                        get, json, middleware,
@@ -111,8 +111,13 @@ userTimelineAction = do
   ctx      <- lift ask
   userName <- param "userName"
   limit    <- param "limit" `rescue` (\_ -> return 10)
-  timeline <- liftIO $ runReaderT (runService $ getUserTimeline userName (Just limit)) ctx
-  let statusAndResponse err = status (mkStatus (fromIntegral $ code err) (pack $ show err)) >> json err
+  timeline <- liftIO $
+    runReaderT
+    (unServiceApp $ getUserTimeline userName (Just limit))
+    ctx
+  let statusAndResponse err = do
+        status (mkStatus (fromIntegral $ code err) (pack $ show err))
+        json err
       in either statusAndResponse json timeline
 
 notFoundA :: Action

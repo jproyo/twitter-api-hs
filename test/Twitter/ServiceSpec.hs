@@ -21,11 +21,17 @@ spec :: Spec
 spec = describe "getTimeLine using mocking" $ do
     it "should responds from cache if exist there first" $ do
         ctx   <- liftIO buildCtx
-        cache <- runIdentityT $ runReaderT (unwrap (getUserTimeline @InCache "someuser" (Just 10))) ctx
-        cache `shouldBe` expected "cache" "user"
+        resultFromCache <- runIdentityT $
+          runReaderT
+          (unwrap (getUserTimeline @InCache "someuser" (Just 10)))
+          ctx
+        resultFromCache `shouldBe` expected "cache" "user"
     it "should responds from twitter if it doesnt exist in cache" $ do
         ctx     <- liftIO buildCtx
-        twitter <- runIdentityT $ runReaderT (unwrapNo (getUserTimeline @NoCache "someuser" (Just 10))) ctx
+        twitter <- runIdentityT $
+          runReaderT
+          (unwrapNo (getUserTimeline @NoCache "someuser" (Just 10)))
+          ctx
         twitter `shouldBe` expected "twitter" "user"
 
 newtype InCache a = InCache { unwrap :: ReaderT Context (IdentityT IO) a }

@@ -10,7 +10,6 @@ import           Control.Applicative        (empty, (<$>), (<*>))
 import           Control.Monad.Except       (ExceptT (..), runExceptT)
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import           Control.Monad.Reader       (MonadReader, asks)
-import           Control.Monad.Reader.Class (ask)
 import           Control.Monad.Trans.Maybe  (MaybeT (..))
 import           Core.Utils                 (fromMaybeT, maybeToLeft)
 import           Data.Aeson                 (FromJSON (..), ToJSON (..),
@@ -30,7 +29,7 @@ import           Network.HTTP.Simple
 import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
                                              TwitterResponse)
 import           Twitter.Config             (twitterEncKey)
-import           Twitter.Context            (Context, LogCxt (..), conf)
+import           Twitter.Context            (Context, Logging (debug), conf)
 import           Twitter.Model              (TwitterError, UserTimeLine,
                                              createError, credentialError)
 
@@ -111,14 +110,12 @@ userTimeline timelineReq = runExceptT $ do
     bearer <- ExceptT $ requestBearer httpConnManager
     ExceptT $ requestUserTimeline httpConnManager timelineReq bearer
 
-searchAndCache :: (MonadReader Context m, MonadIO m) =>
+searchAndCache :: (MonadReader Context m, MonadIO m, Logging m) =>
     TimeLineRequest -> m TwitterResponse
 searchAndCache timelineReq = do
-    cxt <- ask
-    liftIO $ debug cxt $
-            "Searching timeline in Twitter API for " <> pack (show timelineReq)
+    debug $ "Searching timeline in Twitter API for " <> pack (show timelineReq)
     result <- userTimeline timelineReq
     return (Just result)
 
-newHandle :: (MonadReader Context m, MonadIO m) => Handle m
+newHandle :: (Logging m, MonadIO m) => Handle m
 newHandle = Handle { timeline = searchAndCache }
