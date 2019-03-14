@@ -17,8 +17,11 @@ import           Twitter.Adapter            (Handle (..), TimeLineRequest (..),
 import           Twitter.Context            (Context, Logging (debug),
                                              putInCache, readFromCache)
 
-cacheStoreTimeLine :: (MonadReader Context m, MonadIO m, Logging m) =>
-    TimeLineRequest -> TwitterResponse -> m TwitterResponse
+cacheStoreTimeLine
+  :: (MonadReader Context m, MonadIO m, Logging m)
+  => TimeLineRequest
+  -> TwitterResponse
+  -> m TwitterResponse
 cacheStoreTimeLine req res = do
     cache <- ask
     liftIO $ either
@@ -28,13 +31,18 @@ cacheStoreTimeLine req res = do
     debug $ "Store in Cache timeline for " <> userName req
     return res
 
-cacheTimeLine :: (MonadReader Context m, MonadIO m, Logging m) =>
-    TimeLineRequest -> m TwitterResponse
+cacheTimeLine
+  :: (MonadReader Context m, MonadIO m, Logging m)
+  => TimeLineRequest
+  -> m TwitterResponse
 cacheTimeLine req = do
-    cache <- ask
+    cache     <- ask
     fromCache <- liftIO (cache `readFromCache` userName req)
-    debug $ "Cache timeline for " <> userName req <>
-        " value " <> maybe "[Nothing]" (const "[Cached Timeline]") fromCache
+    debug
+      $ "Cache timeline for "
+      <> userName req
+      <> " value "
+      <> maybe "[Nothing]" (const "[Cached Timeline]") fromCache
     return $ maybeToEither fromCache
 
 newHandle :: (MonadIO m, Logging m) => Handle m

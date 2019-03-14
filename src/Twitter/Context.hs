@@ -21,9 +21,10 @@ import           Twitter.Config       (Config (..), Environment (..), getConfig)
 import           Twitter.Model        (UserTimeLine)
 
 data Context = Context
-    { config :: Config
-    , logger :: L.Logger
-    , cache  :: C.Cache Text UserTimeLine }
+  { config :: Config
+  , logger :: L.Logger
+  , cache  :: C.Cache Text UserTimeLine
+  }
 
 class ConfigCxt a where
     conf :: a -> Config

@@ -17,15 +17,19 @@ import           Twitter.Context      (Context)
 import           Twitter.Model        (TwitterError, UserTimeLine)
 
 newtype Handle m = Handle
-    { timeline :: (MonadReader Context m, Monad m) =>
-        TimeLineRequest -> m TwitterResponse }
+  { timeline
+    :: (MonadReader Context m, Monad m)
+    => TimeLineRequest
+    -> m TwitterResponse
+  }
 
 type TwitterResponse = Maybe (Either TwitterError UserTimeLine)
 type TimeLineResponse = Either TwitterError UserTimeLine
 
 data TimeLineRequest = TimeLineRequest
-    { userName :: Text
-    , limit    :: Maybe Integer } deriving (Show)
+  { userName :: Text
+  , limit    :: Maybe Integer
+  } deriving (Show)
 
 createTimeLineRequest :: Text -> Maybe Integer -> TimeLineRequest
 createTimeLineRequest = TimeLineRequest

@@ -115,9 +115,9 @@ userTimelineAction = do
     runReaderT
     (unServiceApp $ getUserTimeline userName (Just limit))
     ctx
-  let statusAndResponse err = do
-        status (mkStatus (fromIntegral $ code err) (pack $ show err))
-        json err
+  let statusAndResponse twitterErr@(TwitterError err code) = do
+        status (mkStatus (fromIntegral code) (pack $ show err))
+        json twitterErr
       in either statusAndResponse json timeline
 
 notFoundA :: Action

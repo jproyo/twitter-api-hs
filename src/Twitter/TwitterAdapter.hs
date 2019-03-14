@@ -2,9 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Twitter.TwitterAdapter (
-newHandle
-) where
+module Twitter.TwitterAdapter ( newHandle ) where
 
 import           Control.Applicative        (empty, (<$>), (<*>))
 import           Control.Monad.Except       (ExceptT (..), runExceptT)
@@ -41,8 +39,8 @@ instance FromJSON Token where
     parseJSON _          = empty
 
 instance ToJSON Token where
-    toJSON (Token tToken aToken) = object
-        ["token_type" .= tToken, "access_token" .= aToken]
+    toJSON (Token tToken aToken) =
+      object ["token_type" .= tToken, "access_token" .= aToken]
 
 type ApiResponse a m = m (Either TwitterError a)
 type TokenResponse m = ApiResponse Token m
@@ -51,13 +49,19 @@ type TimeLineResponse m = ApiResponse UserTimeLine m
 extractResponse :: (FromJSON a) => Request -> ApiResponse a IO
 extractResponse request = do
     response <- httpJSONEither request
-    let onError   _    =
-            Left $ fromJust (createError (fromIntegral $ getResponseStatusCode response))
+    let onError  _     =
+          Left
+          $ fromJust (createError (fromIntegral $ getResponseStatusCode response))
         onSuccess resp =
-            maybeToLeft resp (createError (fromIntegral $ getResponseStatusCode response))
+            maybeToLeft
+            resp
+            (createError (fromIntegral $ getResponseStatusCode response))
     return $ either onError onSuccess (getResponseBody response)
 
-requestBearer :: (MonadReader Context m, MonadIO m) => Manager -> TokenResponse m
+requestBearer
+  :: (MonadReader Context m, MonadIO m)
+  => Manager
+  -> TokenResponse m
 requestBearer manager = do
     config <- asks conf
     fromMaybeT (return $ Left credentialError) $ do
@@ -79,12 +83,16 @@ requestBearer manager = do
 
 authorizationToken :: Token -> [S8.ByteString]
 authorizationToken token =
-    [ S8.concat
-        [ E.encodeUtf8 (tokenType token)
-        , " "
-        , E.encodeUtf8 (accessToken token) ] ]
+  [ S8.concat
+    [ E.encodeUtf8 (tokenType token)
+    , " "
+    , E.encodeUtf8 (accessToken token)
+    ]
+  ]
 
-setParamRequestTimeLine :: TimeLineRequest -> [(S8.ByteString, Maybe S8.ByteString)]
+setParamRequestTimeLine
+  :: TimeLineRequest
+  -> [(S8.ByteString, Maybe S8.ByteString)]
 setParamRequestTimeLine timelineReq =
     [ ("screen_name", Just (E.encodeUtf8 (userName timelineReq)))
     , ("count", Just (toByteString' $ fromMaybe 10 (limit timelineReq))) ]
@@ -103,15 +111,19 @@ requestUserTimeline manager timelineReq token = liftIO $ do
             $ setRequestManager manager request
     extractResponse request'
 
-userTimeline :: (MonadReader Context m, MonadIO m) =>
-    TimeLineRequest -> TimeLineResponse m
+userTimeline
+  :: (MonadReader Context m, MonadIO m)
+  => TimeLineRequest
+  -> TimeLineResponse m
 userTimeline timelineReq = runExceptT $ do
     httpConnManager <- liftIO $ newManager tlsManagerSettings
     bearer <- ExceptT $ requestBearer httpConnManager
     ExceptT $ requestUserTimeline httpConnManager timelineReq bearer
 
-searchAndCache :: (MonadReader Context m, MonadIO m, Logging m) =>
-    TimeLineRequest -> m TwitterResponse
+searchAndCache
+  :: (MonadReader Context m, MonadIO m, Logging m)
+  => TimeLineRequest
+  -> m TwitterResponse
 searchAndCache timelineReq = do
     debug $ "Searching timeline in Twitter API for " <> pack (show timelineReq)
     result <- userTimeline timelineReq
