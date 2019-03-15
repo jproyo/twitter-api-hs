@@ -13,8 +13,10 @@ module Twitter.Service
 
 import           Control.Applicative       ((<|>))
 import           Control.Monad             ((>=>))
-import           Control.Monad.Reader      (MonadIO, MonadReader, ReaderT, asks)
+import           Control.Monad.Reader      (MonadIO, MonadReader, ReaderT, asks,
+                                            liftIO)
 import           Control.Monad.Trans.Maybe (MaybeT (..))
+import           Data.Cache                as C (insert, lookup)
 import           Data.Maybe                (fromJust)
 import           Data.Text                 (Text)
 import           System.Logger             as L (Level (Debug, Error), Logger,
@@ -24,7 +26,8 @@ import           Twitter.Adapter           (TimeLineRequest, TimeLineResponse,
                                             TwitterResponse,
                                             createTimeLineRequest, timeline)
 import           Twitter.CacheAdapter      as CA
-import           Twitter.Context           (Context (logger), Logging (..))
+import           Twitter.Context           (Cache (..), Context (cache, logger),
+                                            Logging (..))
 import qualified Twitter.TwitterAdapter    as TA
 
 
@@ -42,6 +45,10 @@ logWith
   -> a
   -> m b
 logWith f t = asks logger >>= flip f (msg t)
+
+instance Cache ServiceApp where
+  put k v = asks cache >>= \ch -> liftIO $ C.insert ch k v >> return ()
+  get k = asks cache >>= \ch -> liftIO $ C.lookup ch k >>= return
 
 
 class MonadReader Context m => CacheTimeLine m where
@@ -68,7 +75,7 @@ getTime
   => TimeLineRequest
   -> m TimeLineResponse
 getTime req =
-  fromJust <$> runMaybeT (cache <|> api)
-    where cache = MaybeT (fromCache req)
-          api   = MaybeT ((fromApi >=> storeCache req) req)
+  fromJust <$> runMaybeT (cacheResult <|> apiResult)
+    where cacheResult = MaybeT (fromCache req)
+          apiResult   = MaybeT ((fromApi >=> storeCache req) req)
 

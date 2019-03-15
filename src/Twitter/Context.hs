@@ -5,14 +5,14 @@ module Twitter.Context
   (
   Context(..),
   Logging(..),
+  Twitter.Context.Cache(..),
   ConfigCxt(..),
-  CacheCxt(..),
   EnvCtx(..),
   buildCtx
   ) where
 
 import           Control.Monad.Reader (MonadReader)
-import           Data.Cache           as C (Cache, insert, lookup, newCache)
+import           Data.Cache           as C (newCache, Cache)
 import           Data.Text            (Text)
 import           System.Clock         (fromNanoSecs)
 import           System.Logger        as L (Level (..), Logger, defSettings,
@@ -38,16 +38,6 @@ class EnvCtx a where
 instance EnvCtx Context where
     env = environment . config
 
-class CacheCxt a where
-    putInCache :: a -> Text -> UserTimeLine -> IO ()
-    readFromCache :: a -> Text -> IO (Maybe UserTimeLine)
-instance CacheCxt (C.Cache Text UserTimeLine) where
-    putInCache     = C.insert
-    readFromCache  = C.lookup
-instance CacheCxt Context where
-    putInCache    cxt  = putInCache    (cache cxt)
-    readFromCache cxt  = readFromCache (cache cxt)
-
 class MonadReader Context m => Logging m where
   {-# MINIMAL logMsg  #-}
   logMsg :: Level -> Text -> m ()
@@ -61,6 +51,10 @@ class MonadReader Context m => Logging m where
   err :: Text -> m ()
   err = logMsg Error
 
+class (MonadReader Context m) => Cache m where
+  {-# MINIMAL put, get #-}
+  put :: Text -> UserTimeLine -> m ()
+  get :: Text -> m (Maybe UserTimeLine)
 
 getLevel :: Config -> Level
 getLevel (Config _ Development) = Debug
