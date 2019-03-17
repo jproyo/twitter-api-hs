@@ -8,7 +8,6 @@ module Twitter.ServiceSpec (spec) where
 
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
-import           Control.Monad.Trans.Identity
 import           Data.Text
 import           Test.Hspec
 import           Twitter.Adapter
@@ -21,23 +20,23 @@ spec :: Spec
 spec = describe "getTimeLine using mocking" $ do
     it "should responds from cache if exist there first" $ do
         ctx   <- liftIO buildCtx
-        resultFromCache <- runIdentityT $
+        resultFromCache <- 
           runReaderT
-          (unwrap (getUserTimeline @InCache "someuser" (Just 10)))
+          (unInCache (getUserTimeline @InCache "someuser" (Just 10)))
           ctx
         resultFromCache `shouldBe` expected "cache" "user"
     it "should responds from twitter if it doesnt exist in cache" $ do
         ctx     <- liftIO buildCtx
-        twitter <- runIdentityT $
+        twitter <-
           runReaderT
-          (unwrapNo (getUserTimeline @NoCache "someuser" (Just 10)))
+          (unNoCache (getUserTimeline @NoCache "someuser" (Just 10)))
           ctx
         twitter `shouldBe` expected "twitter" "user"
 
-newtype InCache a = InCache { unwrap :: ReaderT Context (IdentityT IO) a }
+newtype InCache a = InCache { unInCache :: ReaderT Context IO a }
                  deriving (Applicative, Functor, Monad, MonadIO, MonadReader Context)
 
-newtype NoCache a = NoCache { unwrapNo :: ReaderT Context (IdentityT IO) a }
+newtype NoCache a = NoCache { unNoCache :: ReaderT Context IO a }
                  deriving (Applicative, Functor, Monad, MonadIO, MonadReader Context)
 
 instance CacheTimeLine InCache where
